@@ -21,15 +21,7 @@ class SimpleVectorDB(private val dbFile: File) {
             dataList.clear()
             try {
                 val content = context.assets.open(assetPath).bufferedReader(Charsets.UTF_8).use { it.readText() }
-                val jsonArray = JSONArray(content)
-                for (i in 0 until jsonArray.length()) {
-                    try {
-                        val obj = jsonArray.getJSONObject(i)
-                        dataList.add(VectorDbEntry.fromJsonObject(obj))
-                    } catch (e: Exception) {
-                        // Skip broken single entry and keep parsing all remaining docs
-                    }
-                }
+                parseAndPopulateEntries(content)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -46,18 +38,22 @@ class SimpleVectorDB(private val dbFile: File) {
             if (dbFile.exists() && dbFile.length() > 0) {
                 try {
                     val content = dbFile.readText(Charsets.UTF_8)
-                    val jsonArray = JSONArray(content)
-                    for (i in 0 until jsonArray.length()) {
-                        try {
-                            val obj = jsonArray.getJSONObject(i)
-                            dataList.add(VectorDbEntry.fromJsonObject(obj))
-                        } catch (e: Exception) {
-                            // Skip broken single entry and keep parsing all remaining docs
-                        }
-                    }
+                    parseAndPopulateEntries(content)
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
+            }
+        }
+    }
+
+    private fun parseAndPopulateEntries(jsonContent: String) {
+        val jsonArray = JSONArray(jsonContent)
+        for (i in 0 until jsonArray.length()) {
+            try {
+                val obj = jsonArray.getJSONObject(i)
+                dataList.add(VectorDbEntry.fromJsonObject(obj))
+            } catch (_: Exception) {
+                // Skip broken single entry and keep parsing all remaining docs
             }
         }
     }
