@@ -1,0 +1,21 @@
+﻿*.gguf
+*.onnx
+*.bin
+*.hprof
+*.apk
+*.aar
+*.jar
+*.iml
+.gradle
+/build
+/app/build
+/app/.cxx
+/.idea
+/local.properties
+.DS_Store
+/captures
+.externalNativeBuild
+.cxx
+/Ondevice_AI_Complete_Backup/
+DB 자료/
+문서/
