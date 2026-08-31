@@ -1,0 +1,6 @@
+{
+  "name": "Qwen GGUF Runner",
+  "description": "Qwen GGUF on-device model runner with Gradio-style interface, sandbox loading, multithreading, token streaming, and profiling logs.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

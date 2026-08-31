@@ -1,0 +1,64 @@
+=========================================================
+[Qwen GGUF 온디바이스 AI 앱 - 상세 트러블슈팅 및 엔진 통합 이력]
+=========================================================
+
+이 문서는 llama.cpp 기반의 GGUF 모델을 안드로이드 네이티브 앱에 통합하는 과정에서 발생한 핵심 에러(2번, 3번, 4번)의 근본적인 원인과 기술적 조치 방안을 심도 있게 기록한 문서입니다.
+
+---------------------------------------------------------
+2. 모델 파일 접근 불가 (No content provider) 에러 및 FileProvider 우회
+---------------------------------------------------------
+- [발생 증상]
+  앱의 `sandbox_models` 디렉토리에 GGUF 파일을 저장한 뒤 로드 버튼을 누르면, Logcat에 다음과 같은 치명적 에러가 발생하며 네이티브 라이브러리가 로드에 실패했습니다.
+  `Error(message=Failed to open files: No content provider: /data/user/0/com.aistudio.qwengguf.mkxrt/files/sandbox_models/qwen2.5.gguf)`
+
+- [근본 원인 기술 분석]
+  이 앱에서 사용한 네이티브 래퍼 라이브러리(`llamacpp-kotlin`, 원본 `rnllama` 기반)는 React Native 환경의 파일 처리 방식을 그대로 차용하고 있었습니다. 
+  일반적인 C++ JNI 라이브러리들이 `File` 객체의 절대 경로(`/data/user/0/...`)를 직접 읽는 것과 달리, 해당 라이브러리는 안드로이드 시스템의 `ContentResolver.openFileDescriptor()` 함수를 사용해 파일의 FileDescriptor(FD)를 추출하도록 하드코딩되어 있었습니다.
+  안드로이드 시스템은 보안 정책 상 일반 절대 경로 문자열을 `ContentResolver`에 던지면 인식하지 못하고 `No content provider` (해당 경로를 제공하는 앱/프로바이더가 없음) 에러를 뱉습니다.
+
+- [상세 조치 방안]
+  1. 안드로이드 공식 보안 파일 공유 시스템인 `FileProvider`를 앱에 도입했습니다.
+  2. `AndroidManifest.xml`에 `<provider>` 태그를 추가하여 `androidx.core.content.FileProvider`를 선언했습니다.
+  3. `res/xml/file_paths.xml`을 생성하여 `<files-path name="sandbox_models" path="sandbox_models/" />` 규칙을 정의, 앱 내부 폴더를 외부/내부 프로바이더가 읽을 수 있게 허용했습니다.
+  4. Kotlin 브릿지(`LlamaCppBridge.kt`)에서 네이티브 엔진으로 경로를 넘기기 직전, `FileProvider.getUriForFile()` API를 호출했습니다.
+  5. 그 결과 `/data/user/0/...` 형태의 절대 경로가 `content://com.aistudio.qwengguf.mkxrt.fileprovider/sandbox_models/...` 라는 정식 URI 형식으로 변환되었고, 네이티브 엔진의 `ContentResolver`가 이를 정상적으로 열어 `Model FD: 146` 등 파일 디스크립터를 성공적으로 확보할 수 있었습니다.
+
+
+---------------------------------------------------------
+3. 멀티모달(mmproj) 인자 처리 오류로 인한 네이티브 크래시
+---------------------------------------------------------
+- [발생 증상]
+  FileProvider 해결 이후 메인 GGUF 모델 파일은 열렸으나, 그 직후에 `No content provider: ` (경로가 비어있음) 에러가 찍히면서 Context 초기화가 중단되는 현상이 발생했습니다.
+
+- [근본 원인 기술 분석]
+  라이브러리의 핵심 모델 로드 함수인 `LlamaHelper.load()`는 다음과 같은 파라미터를 받도록 설계되어 있었습니다.
+  `load(String path, int contextSize, String mmproj, ...)`
+  여기서 3번째 인자인 `mmproj`는 이미지 처리를 위한 비전 멀티모달(Vision Multimodal) 프로젝션 모델의 경로입니다.
+  초기 브릿지 코드 작성 시, 이미지를 쓰지 않는다는 의미로 빈 문자열(`""`)을 던졌습니다.
+  하지만 엔진 내부의 디컴파일된 바이트코드를 뜯어본 결과, 파라미터가 `null`인 경우에만 멀티모달 로직을 스킵(`ifnull`)하고, 빈 문자열(`""`)이라도 값이 존재하면 무조건 `Uri.parse()`를 시도하여 `ContentResolver`를 호출하는 로직으로 되어 있었습니다. 따라서 엔진이 `""` 경로를 열려고 시도하다가 뻗어버린 것입니다.
+
+- [상세 조치 방안]
+  브릿지 코드에서 `load` 함수와 이후 `predict` 함수를 호출할 때 빈 문자열(`""`)로 넘기던 파라미터들을 모두 명시적 `null` 객체로 변경했습니다.
+  `llamaHelper!!.load(fileUri, contextSize, null)`
+  이 조치로 네이티브 라이브러리 내부의 분기문이 이미지 프로젝션 로드 단계를 완전히 건너뛰게 되었고, 순수 텍스트 GGUF 모델만 깔끔하게 메모리(RAM)에 안착(`Context loaded successfully`)하게 되었습니다.
+
+
+---------------------------------------------------------
+4. 답변 누락(Streaming 실패) 및 0토큰(빈 풍선) 출력 현상
+---------------------------------------------------------
+- [발생 증상]
+  `AI Active` 상태가 되어 채팅창에 질문("안녕")을 입력했으나, 화면 상단 상태표시줄의 생성 토큰(`GEN TOKENS`)이 0으로 유지되며 빈 대화 풍선만 출력되고 종료되었습니다. 앱이 멈추거나 튕기는 에러는 발생하지 않았습니다.
+
+- [근본 원인 기술 분석]
+  이 문제는 네이티브 엔진 제어 옵션 누락과, 이벤트 객체 리플렉션(Reflection) 추출 실패라는 두 가지 원인이 겹친 복합 버그였습니다.
+  1) 스트리밍 옵션 누락: `LlamaHelper.predict()` 함수의 3번째 파라미터는 `emit_partial_completion`(실시간 부분 토큰 발행) boolean 값이었습니다. 이를 `false`로 설정하자, 네이티브 엔진은 코루틴(Flow)을 통해 한 글자씩 내뱉지 않고 전체 문장이 완성될 때까지 대기만 하다가 마지막에 `Done` 이벤트만 한 번 던졌습니다.
+  2) 잘못된 Property Name 매핑: 네이티브 엔진이 실시간으로 뱉어주는 데이터 클래스(`LlamaHelper$LLMEvent$Ongoing`)를 Java Reflection으로 분석해본 결과, 글자(토큰) 데이터가 담긴 변수명과 Getter 메서드가 일반적인 `token` / `getToken()`이 아니라, `word` / `getWord()` 로 정의되어 있었습니다. 브릿지 코드는 `getToken()`만 시도하고, 실패 시 `token=` 문자열만 파싱하려 했기 때문에 실제 생성된 글자를 단 하나도 화면으로 넘기지 못하고 버리고(drop) 있었습니다.
+
+- [상세 조치 방안]
+  1) `llamaHelper!!.predict(prompt, null, true)`로 변경하여, 문장이 텍스트 생성 중일 때 실시간으로 `Ongoing` 이벤트를 뿜어내도록 네이티브 엔진 설정을 강제했습니다.
+  2) 브릿지 코드(`LlamaCppBridge.kt`)의 리플렉션 추출부를 완전히 재작성했습니다.
+     - 1순위 시도: `event.javaClass.getMethod("getWord").invoke(event)`
+     - 2순위 시도(대비책): `event.javaClass.getMethod("getToken").invoke(event)`
+     - 3순위 시도(최후 파싱): `event.toString()`을 추출하여 `word=안녕하세요,` 형태에서 앞뒤 문자열을 파싱.
+  이 다중 방어 로직을 적용하자, 네이티브 엔진(llama.cpp)이 뱉어내는 C++ 계층의 토큰들이 Kotlin Flow를 타고 안전하게 앱의 ViewModel에 도달했으며, 마침내 타자기를 치는 듯한 실시간 스트리밍 UI가 완벽하게 구현되었습니다.
+=========================================================

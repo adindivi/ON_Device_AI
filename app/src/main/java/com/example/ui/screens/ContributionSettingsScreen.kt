@@ -35,6 +35,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -61,6 +62,9 @@ import com.example.ui.theme.TossGray600
 import com.example.ui.theme.TossOutline
 import com.example.ui.theme.TossWhite
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+
 /**
  * 데이터 관리 화면 — Toss B&W 모바일 UI 최적화 버전 (기여 건수 강조형 배지 적용)
  */
@@ -68,15 +72,33 @@ import com.example.ui.theme.TossWhite
 fun ContributionSettingsScreen(
     userDocuments: List<RagDocument>,
     backendStatus: BackendDbStatus? = null,
+    isQwenLoading: Boolean = false,
     onOpenAddRemedy: () -> Unit,
     onEditDocument: (RagDocument) -> Unit,
     onDeleteDocument: (Long) -> Unit,
     onRefreshStatus: (() -> Unit)? = null,
+    onQwenModelSelected: ((android.net.Uri) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     var refreshKey by remember { mutableIntStateOf(0) }
     val count = userDocuments.size
+
+    val qwenPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: android.net.Uri? ->
+        uri?.let {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    it,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            onQwenModelSelected?.invoke(it)
+        }
+    }
 
     // [추천 3] 기여 건수 강조형 배지 등급 설정
     val (gradeTag, gradeColor) = when {
@@ -204,8 +226,8 @@ fun ContributionSettingsScreen(
                                         color = Color(0xFF38BDF8)
                                     )
                                     Text(
-                                        text = "• GGUF 모델: qwen2.5-1.5b-instruct-q8_0.gguf (8-bit)",
-                                        fontSize = 10.sp,
+                                        text = "• GGUF 모델: qwen2.5-1.5b-instruct-q4_k_m.gguf (4-bit)",
+                                        style = MaterialTheme.typography.bodyMedium,
                                         color = Color(0xFFCBD5E1)
                                     )
                                     Text(
@@ -231,19 +253,34 @@ fun ContributionSettingsScreen(
                             // 연동 항목 상태
                             Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.CheckCircle,
-                                        contentDescription = "Status",
-                                        tint = if (status.isQwenModelFound) Color(0xFF10B981) else Color(0xFFF59E0B),
-                                        modifier = Modifier.size(13.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "GGUF LLM 모델: " +
-                                                if (status.isQwenModelFound) "qwen2.5-1.5b-instruct-q8_0.gguf 로드 완료" else "qwen2.5-1.5b-instruct-q8_0.gguf 파일 DB 폴더 배치 필요",
-                                        fontSize = 10.5.sp,
-                                        color = Color(0xFFE2E8F0)
-                                    )
+                                    if (isQwenLoading) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(13.dp),
+                                            strokeWidth = 2.dp,
+                                            color = Color(0xFFFFC107)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "⏳ GGUF 모델 복사 중... 잠시만 기다려주세요",
+                                            fontSize = 10.5.sp,
+                                            color = Color(0xFFFFC107)
+                                        )
+                                    } else {
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = "Status",
+                                            tint = if (status.isQwenModelFound) Color(0xFF10B981) else Color(0xFFF59E0B),
+                                            modifier = Modifier.size(13.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "GGUF LLM 모델: " +
+                                                    if (status.isQwenModelFound) "qwen2.5-1.5b-instruct-q4_k_m.gguf 로드 완료" else "qwen2.5-1.5b-instruct-q4_k_m.gguf 파일 직접 선택 (탭하여 로드)",
+                                            fontSize = 10.5.sp,
+                                            color = Color(0xFFE2E8F0),
+                                            modifier = Modifier.clickable { qwenPickerLauncher.launch(arrayOf("*/*")) }
+                                        )
+                                    }
                                 }
 
                                 Row(verticalAlignment = Alignment.CenterVertically) {

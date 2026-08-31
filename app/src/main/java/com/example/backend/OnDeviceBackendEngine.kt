@@ -8,6 +8,8 @@ import com.example.ui.viewmodel.ExtractedMetadata
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import java.io.File
 import java.util.UUID
 import java.util.regex.Pattern
@@ -87,7 +89,7 @@ class OnDeviceBackendEngine(private val context: Context) {
             try { docsDirectory.mkdirs() } catch (_: Exception) {}
         }
 
-        val primaryModel = File(dbDirectory, "qwen2.5-1.5b-instruct-q8_0.gguf")
+        val primaryModel = File(dbDirectory, "qwen2.5-1.5b-instruct-q4_k_m.gguf")
         val anyGguf = dbDirectory.listFiles { _, name -> name.endsWith(".gguf", ignoreCase = true) }?.firstOrNull()
         qwenModelFile = when {
             primaryModel.exists() -> primaryModel
@@ -117,13 +119,29 @@ class OnDeviceBackendEngine(private val context: Context) {
         ragSearcher = RAGSearcher(vectorDb, onnxBertEngine)
 
         // 5. Initialize Qwen LLM
-        qwenLlm = QwenLLM(qwenModelFile)
+        qwenLlm = QwenLLM(context, qwenModelFile)
 
         documentWatcher = DocumentWatcher(docsDirectory, vectorDb, ragSearcher) { addedCount ->
             syncVectorDbToRoom()
         }
 
+        val prefs = context.getSharedPreferences("qwen_prefs", Context.MODE_PRIVATE)
+        val savedUriStr = prefs.getString("qwen_uri", null)
+        if (savedUriStr != null) {
+            try {
+                qwenLlm.loadFromUri(context, android.net.Uri.parse(savedUriStr))
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
         clearOldDatabaseAndSyncFresh()
+    }
+
+    fun loadQwenModelFromUri(uri: android.net.Uri, onComplete: (Boolean) -> Unit = {}) {
+        val prefs = context.getSharedPreferences("qwen_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putString("qwen_uri", uri.toString()).apply()
+        qwenLlm.loadFromUri(context, uri, onComplete)
     }
 
     private fun unpackAssetsDbIfMissing() {
@@ -291,10 +309,15 @@ class OnDeviceBackendEngine(private val context: Context) {
         ragSearcher.updateScoringWeights(weights)
     }
 
-    fun diagnose(query: String, weights: ScoringWeights? = null): DiagnosisBackendResponse {
-        val matches = ragSearcher.search(query, topK = 10, weights = weights)  // 🔧 수정: 3 → 10 (더보기 최대 10개)
-        val answer = qwenLlm.generateAnswer(query, matches)
-        return DiagnosisBackendResponse(qwenAnswer = answer, rawMatches = matches)
+    fun diagnoseStream(query: String, weights: ScoringWeights? = null): Flow<DiagnosisBackendResponse> {
+        val matches = ragSearcher.search(query, topK = 10, weights = weights)
+        var fullAnswer = ""
+        return flow {
+            qwenLlm.generateAnswerStream(query, matches).collect { token ->
+                fullAnswer += token
+                emit(DiagnosisBackendResponse(qwenAnswer = fullAnswer, rawMatches = matches))
+            }
+        }
     }
 
     fun recommend(docId: String): Int {

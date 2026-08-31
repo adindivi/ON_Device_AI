@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 
 data class VehicleInfo(
     val name: String = "Tesla Model 3",
@@ -92,6 +94,26 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
 
     fun refreshBackendStatus() {
         _backendDbStatus.value = backendEngine.getDbStatus()
+    }
+
+    private val _isQwenLoading = MutableStateFlow(false)
+    val isQwenLoading: StateFlow<Boolean> = _isQwenLoading.asStateFlow()
+
+    fun onQwenModelSelected(uri: android.net.Uri) {
+        _isQwenLoading.value = true
+        showToast("⏳ 안전한 내부 공간으로 1.8GB 모델 복사 중입니다 (약 15초 소요)...")
+        
+        backendEngine.loadQwenModelFromUri(uri) { success ->
+            viewModelScope.launch(Dispatchers.Main) {
+                _isQwenLoading.value = false
+                if (success) {
+                    showToast("✅ 복사 및 큐웬 모델 GGUF 파일 연결 완료!")
+                } else {
+                    showToast("❌ 모델 복사 또는 연결 실패")
+                }
+                refreshBackendStatus()
+            }
+        }
     }
 
     // Vehicle State
@@ -276,20 +298,29 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
             _diagnosisStep.value = 3
             delay(800)
 
-            // Step 4: 종합 진단 보고서 작성
+            // Step 4: 종합 진단 보고서 작성 (스트리밍 시작)
             _diagnosisStep.value = 4
             delay(400)
+            
+            _isGuideExpanded.value = true // 스트리밍 결과를 바로 볼 수 있게 열어둠
 
-            val diagnosisResult = diagnoseUseCase.execute(queryDtc, querySymptom)
-            val newHistory = diagnosisResult.history
-            _activeResultMatches.value = diagnosisResult.matches
+            withContext(Dispatchers.IO) {
+                diagnoseUseCase.executeStream(queryDtc, querySymptom).collect { diagnosisResult ->
+                    withContext(Dispatchers.Main) {
+                        val newHistory = diagnosisResult.history
+                        _activeResultMatches.value = diagnosisResult.matches
+                        _activeResult.value = newHistory
+                        
+                        // DB 저장은 마지막에 해야 하지만 스트리밍 중 계속 덮어쓸 순 없으니 나중에 개선.
+                        // 현재는 그냥 임시로 UI만 업데이트.
+                    }
+                }
+            }
+            
+            // Save to DB (최종 완료된 결과만 저장)
+            _activeResult.value?.let { repository.insertHistory(it) }
 
-            // Save to DB
-            repository.insertHistory(newHistory)
-
-            _activeResult.value = newHistory
             _isDiagnosing.value = false
-            _isGuideExpanded.value = true
             refreshBackendStatus()
             showToast("✅ 스마트 정비 진단서가 작성되었습니다.")
         }

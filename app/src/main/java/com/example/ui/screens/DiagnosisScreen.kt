@@ -745,22 +745,9 @@ fun TypingText(
     style: TextStyle,
     typingDelayMs: Long = 18L
 ) {
-    var visible by remember(fullText) { mutableStateOf(false) }
-    val alpha by androidx.compose.animation.core.animateFloatAsState(
-        targetValue = if (visible) 1f else 0f,
-        animationSpec = androidx.compose.animation.core.tween(durationMillis = 200),
-        label = "fade_in_anim"
-    )
-
-    LaunchedEffect(fullText) {
-        visible = false
-        kotlinx.coroutines.delay(50L)
-        visible = true
-    }
-
     Text(
         text = fullText,
-        modifier = modifier.alpha(alpha),
+        modifier = modifier,
         style = style
     )
 }

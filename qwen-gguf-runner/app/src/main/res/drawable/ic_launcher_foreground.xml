@@ -1,0 +1,32 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Neural core / Q icon -->
+    <path
+        android:pathData="M54,30 C40.75,30 30,40.75 30,54 C30,67.25 40.75,78 54,78 C59.2,78 64.0,76.3 67.9,73.5 L74.2,79.8 C75.0,80.6 76.3,80.6 77.1,79.8 C77.9,79.0 77.9,77.7 77.1,76.9 L71.2,71.0 C75.4,66.5 78,60.6 78,54 C78,40.75 67.25,30 54,30 Z M54,70 C45.16,70 38,62.84 38,54 C38,45.16 45.16,38 54,38 C62.84,38 70,45.16 70,54 C70,62.84 62.84,70 54,70 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="30"
+                android:startY="30"
+                android:endX="78"
+                android:endY="78"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#38BDF8" />
+                <item android:offset="0.5" android:color="#818CF8" />
+                <item android:offset="1.0" android:color="#F43F5E" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Inner glowing AI kernel dot -->
+    <path
+        android:pathData="M54,46 A8,8 0 1,1 53.99,46 Z"
+        android:fillColor="#38BDF8" />
+    <path
+        android:pathData="M48,54 L60,54 M54,48 L54,60"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+</vector>
