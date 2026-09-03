@@ -144,40 +144,28 @@ class OnDeviceBackendEngine(private val context: Context) {
         qwenLlm.loadFromUri(context, uri, onComplete)
     }
 
+    private fun copyAssetFile(assetPath: String, targetFile: File, overwrite: Boolean = true) {
+        try {
+            context.assets.open(assetPath).use { input ->
+                if (overwrite || !targetFile.exists() || targetFile.length() == 0L) {
+                    targetFile.outputStream().use { output -> input.copyTo(output) }
+                }
+            }
+        } catch (e: Exception) {
+            // Asset file might be optional or omitted
+        }
+    }
+
     private fun unpackAssetsDbIfMissing() {
         val mappingFile = File(dbDirectory, MappingDictionary.MAPPING_FILENAME)
         val onnxModelFile = File(dbDirectory, "ko-sbert-multitask_embedding.onnx")
         val onnxVocabFile = File(dbDirectory, "ko-sbert-multitask_vocab.txt")
         try {
-            // Preserve user-placed DB files if exist in device DB folder, unpack from assets only if missing
-            if (!mappingFile.exists() || mappingFile.length() == 0L) {
-                context.assets.open("DB/mapping_dictionary.json").use { input ->
-                    mappingFile.outputStream().use { output -> input.copyTo(output) }
-                }
-            }
-            if (!vectorDbFile.exists() || vectorDbFile.length() == 0L) {
-                context.assets.open("DB/rag_vector_database.json").use { input ->
-                    vectorDbFile.outputStream().use { output -> input.copyTo(output) }
-                }
-            }
-            if (!onnxModelFile.exists() || onnxModelFile.length() == 0L) {
-                try {
-                    context.assets.open("DB/ko-sbert-multitask_embedding.onnx").use { input ->
-                        onnxModelFile.outputStream().use { output -> input.copyTo(output) }
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-            if (!onnxVocabFile.exists() || onnxVocabFile.length() == 0L) {
-                try {
-                    context.assets.open("DB/ko-sbert-multitask_vocab.txt").use { input ->
-                        onnxVocabFile.outputStream().use { output -> input.copyTo(output) }
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
+            // Force unpack/overwrite DB and fine-tuned ONNX assets to prevent stale device cache issues
+            copyAssetFile("DB/mapping_dictionary.json", mappingFile, overwrite = true)
+            copyAssetFile("DB/rag_vector_database.json", vectorDbFile, overwrite = true)
+            copyAssetFile("DB/ko-sbert-multitask_embedding.onnx", onnxModelFile, overwrite = true)
+            copyAssetFile("DB/ko-sbert-multitask_vocab.txt", onnxVocabFile, overwrite = true)
         } catch (e: Exception) {
             e.printStackTrace()
         }

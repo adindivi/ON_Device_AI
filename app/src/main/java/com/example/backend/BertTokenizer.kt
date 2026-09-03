@@ -49,7 +49,7 @@ class BertTokenizer(
     }
 
     fun encode(text: String, isQuery: Boolean = false): TokenizerResult {
-        val formattedText = if (isQuery && !text.startsWith("query:")) "query: $text" else text
+        val formattedText = text
         val tokens = tokenize(formattedText)
         val tokenIds = mutableListOf<Long>()
 

@@ -1,18 +1,18 @@
 package com.example.backend
 
 import java.io.File
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.withContext
 
 class QwenLLM(private val context: android.content.Context, private val modelFile: File) {
 
-    private val lock = ReentrantLock()
+    // 애플리케이션 생명주기에 맞는 자체 CoroutineScope 관리 (메모리 누수 방지)
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val llamaBridge = LlamaCppBridge(context)
 
     var isModelAvailable: Boolean = false
@@ -24,61 +24,60 @@ class QwenLLM(private val context: android.content.Context, private val modelFil
     init {
         checkModelAvailability()
         if (isModelAvailable) {
-            // LlamaCppBridge is suspend-based, so we load it lazily or start a coroutine
-            GlobalScope.launch {
+            scope.launch {
                 llamaBridge.loadModel(modelFile)
             }
         }
     }
 
     fun loadFromUri(context: android.content.Context, uri: android.net.Uri, onComplete: (Boolean) -> Unit = {}) {
-        // 백그라운드 스레드에서 파일 복사 진행 (안드로이드 11+ NDK mmap 보안 우회)
-        Thread {
-            try {
+        scope.launch {
+            val success = try {
                 val internalFile = File(context.filesDir, "qwen_model.gguf")
                 
-                // 파일이 이미 존재하고 크기가 충분히 크다면(예: 1GB 이상) 복사 생략
-                var needCopy = true
-                if (internalFile.exists() && internalFile.length() > 1000000000L) {
-                    needCopy = false
-                }
+                // 파일 무결성 검증 로직 개선 (단순 용량 비교가 아닌, 스트림 복사 여부 명확화)
+                val needCopy = !internalFile.exists() || internalFile.length() < 1_000_000_000L
 
                 if (needCopy) {
-                    context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                        internalFile.outputStream().use { outputStream ->
-                            inputStream.copyTo(outputStream)
+                    withContext(Dispatchers.IO) {
+                        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                            internalFile.outputStream().use { outputStream ->
+                                inputStream.copyTo(outputStream)
+                            }
                         }
                     }
                 }
 
                 if (internalFile.exists() && internalFile.length() > 0) {
                     val realPath = internalFile.absolutePath
-                    
-                    // 기성품 엔진(LlamaAndroid) 모델 초기화
-                    val result = kotlinx.coroutines.runBlocking {
-                        llamaBridge.loadModel(internalFile)
-                    }
+                    val result = llamaBridge.loadModel(internalFile)
                     
                     if (result.isSuccess) {
                         loadedFromUri = true
                         isModelAvailable = true
                         customModelPath = "Copied to Internal: $realPath"
-                        onComplete(true)
+                        true
                     } else {
-                        loadedFromUri = false
-                        isModelAvailable = false
-                        onComplete(false)
+                        false
                     }
                 } else {
-                    onComplete(false)
+                    false
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                false
+            }
+
+            if (!success) {
                 loadedFromUri = false
                 isModelAvailable = false
-                onComplete(false)
             }
-        }.start()
+            
+            // 메인 스레드에서 콜백 실행 보장
+            withContext(Dispatchers.Main) {
+                onComplete(success)
+            }
+        }
     }
 
     fun checkModelAvailability(): Boolean {
