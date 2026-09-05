@@ -285,6 +285,75 @@ class RAGSearcherTest {
         assertEquals("DOC-DTC", results[0].id)
         assertTrue(results[0].score >= 10.0f)
     }
+
+    @Test
+    fun `search - 4단계 계층형 DTC 매칭 순위 및 신뢰도 구간 검증 (완전일치 - 끝자리오타 - 중간오타 - 계통일치 - 무관문서)`() {
+        // Given: C120602 검색에 대해 5가지 계층의 문서
+        val docExact = createEntry(
+            id = "DOC-EXACT",
+            text = "C120602 고장 코드 정확 일치",
+            dtcCode = "C120602",
+            component = "뒤좌측 휠속도센서 회로 이상"
+        )
+        val docSuffixTypo = createEntry(
+            id = "DOC-SUFFIX-TYPO",
+            text = "C120601 고장 코드 끝자리 오타",
+            dtcCode = "C120601",
+            component = "뒤좌측 휠속도센서 단선"
+        )
+        val docMiddleTypo = createEntry(
+            id = "DOC-MIDDLE-TYPO",
+            text = "C120402 고장 코드 중간 오타",
+            dtcCode = "C120402",
+            component = "앞우측 휠속도센서 성능 이상"
+        )
+        val docFamilyMatch = createEntry(
+            id = "DOC-FAMILY",
+            text = "C128702 ABS 제어기 계통 코드 (앞 3자리 일치)",
+            dtcCode = "C128702",
+            component = "브레이크 압력 센서"
+        )
+        val docUnrelated = createEntry(
+            id = "DOC-UNRELATED",
+            text = "B124111 에어컨 센서 단락",
+            dtcCode = "B124111",
+            component = "증발기 센서"
+        )
+
+        vectorDb.addDocumentsBatch(listOf(docFamilyMatch, docMiddleTypo, docUnrelated, docExact, docSuffixTypo))
+
+        // When: c120602 검색
+        val results = ragSearcher.search("c120602", topK = 5)
+
+        // Then: 5개 결과의 완벽한 순서 보장
+        assertEquals(5, results.size)
+        assertEquals("DOC-EXACT", results[0].id)
+        assertEquals("DOC-SUFFIX-TYPO", results[1].id)
+        assertEquals("DOC-MIDDLE-TYPO", results[2].id)
+        assertEquals("DOC-FAMILY", results[3].id)
+        assertEquals("DOC-UNRELATED", results[4].id)
+
+        // 신뢰도 구간 검증
+        // 1등급: 98 ~ 100%
+        assertTrue("Tier 1 신뢰도 98~100% (실제: ${results[0].confidencePercent})", results[0].confidencePercent!! in 98.0f..100.0f)
+        assertTrue("Tier 1 점수 10.0 이상 (실제: ${results[0].score})", results[0].score >= 10.0f)
+
+        // 2등급: 90 ~ 95%
+        assertTrue("Tier 2 신뢰도 90~95% (실제: ${results[1].confidencePercent})", results[1].confidencePercent!! in 90.0f..95.0f)
+        assertTrue("Tier 2 점수 5.0 이상 (실제: ${results[1].score})", results[1].score >= 5.0f)
+
+        // 3등급: 85 ~ 89%
+        assertTrue("Tier 3 신뢰도 85~89% (실제: ${results[2].confidencePercent})", results[2].confidencePercent!! in 85.0f..89.0f)
+        assertTrue("Tier 3 점수 5.0 이상 (실제: ${results[2].score})", results[2].score >= 5.0f)
+
+        // 4등급: 75 ~ 84%
+        assertTrue("Tier 4 신뢰도 75~84% (실제: ${results[3].confidencePercent})", results[3].confidencePercent!! in 75.0f..84.0f)
+        assertTrue("Tier 4 점수 2.0 이상 (실제: ${results[3].score})", results[3].score >= 2.0f)
+
+        // 무관: 0 ~ 74%
+        assertTrue("무관 문서 신뢰도 <= 74% (실제: ${results[4].confidencePercent})", results[4].confidencePercent!! <= 74.0f)
+        assertTrue("무관 문서 점수 < 1.0 (실제: ${results[4].score})", results[4].score < 1.0f)
+    }
 }
 
 

@@ -201,7 +201,49 @@ class RecommendationScorerTest {
         // Then: 기본 Fuzzy Boost (12.0점 이상) 확인 및 끝자리 오타 점수가 중간 오타 점수보다 높음 확인
         val baseFuzzyBoost = defaultWeights.dtcExactBoost * (12.0f / 15.0f)
         assertTrue(trailingDetail.dtcBoost >= baseFuzzyBoost)
-        assertTrue("끝자리 오타 점수(13.5)가 중간 오타 점수(13.0)보다 높아야 합니다", trailingDetail.dtcBoost > middleDetail.dtcBoost)
+        assertTrue("끝자리 오타 점수(13.5)가 중간 오타 점수(11.5)보다 높아야 합니다", trailingDetail.dtcBoost > middleDetail.dtcBoost)
+    }
+
+    @Test
+    fun `calculateScore - 피라미드 4단계 계층형 DTC 매칭 점수 검증 (1등급 완전일치, 2등급 끝자리오타, 3등급 중간오타, 4등급 계통일치)`() {
+        // Given: 기준 고장코드 C120602
+        val queryDtc = "C120602"
+        val exactEntry = createTestEntry(id = "T1", dtcCode = "C120602")
+        val suffixTypoEntry = createTestEntry(id = "T2", dtcCode = "C120601") // 2등급: 끝자리 오타
+        val middleTypoEntry = createTestEntry(id = "T3", dtcCode = "C120402") // 3등급: 중간자리 오타
+        val familyEntry = createTestEntry(id = "T4", dtcCode = "C128702")     // 4등급: 앞 3자리 계통(C12...) 일치
+        val unrelatedEntry = createTestEntry(id = "T5", dtcCode = "B124111")  // 무관한 코드
+
+        // When
+        fun getDtcScore(entry: VectorDbEntry): Float {
+            return scorer.calculateScore(
+                queryLower = queryDtc.lowercase(),
+                queryEmb = null,
+                dtcPatterns = listOf(queryDtc),
+                queryTerms = listOf(queryDtc),
+                entry = entry,
+                queryEmbeddingProvider = { emptyList() }
+            ).dtcBoost
+        }
+
+        val exactScore = getDtcScore(exactEntry)
+        val suffixScore = getDtcScore(suffixTypoEntry)
+        val middleScore = getDtcScore(middleTypoEntry)
+        val familyScore = getDtcScore(familyEntry)
+        val unrelatedScore = getDtcScore(unrelatedEntry)
+
+        // Then: 엄격한 4계층 점수 격차 확인
+        // 1등급(15.0) > 2등급(13.5) > 3등급(11.5) > 4등급(8.25) > 무관(0.0)
+        assertEquals(15.0f, exactScore, 0.001f)
+        assertTrue("2등급(끝자리 오타)은 13.0 ~ 13.5점 사이여야 합니다 (실제: $suffixScore)", suffixScore in 13.0f..13.5f)
+        assertTrue("3등급(중간자리 오타)은 11.0 ~ 12.0점 사이여야 합니다 (실제: $middleScore)", middleScore in 11.0f..12.0f)
+        assertTrue("4등급(앞3자리 계통)은 8.25 ~ 9.0점 사이여야 합니다 (실제: $familyScore)", familyScore in 8.25f..9.0f)
+        assertEquals(0.0f, unrelatedScore, 0.001f)
+
+        assertTrue("1등급 > 2등급", exactScore > suffixScore)
+        assertTrue("2등급 > 3등급", suffixScore > middleScore)
+        assertTrue("3등급 > 4등급", middleScore > familyScore)
+        assertTrue("4등급 > 무관", familyScore > unrelatedScore)
     }
 
     // ────────────────────────────────────────────────────────────────────────

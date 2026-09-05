@@ -184,31 +184,56 @@ class RAGSearcher(
             }
             val baseRrfScore = kwContribution + vecContribution
 
-            // DTC 일치 여부 확인 (정확 일치 vs 1자 오타 퍼지 일치)
-            val isExactDtcMatch = item.scoreDetail.dtcBoost >= activeWeights.dtcExactBoost && item.scoreDetail.dtcBoost > 0f
-            val isFuzzyDtcMatch = item.scoreDetail.dtcBoost > 0f && !isExactDtcMatch
+            // DTC 일치 여부 확인 (피라미드 4단계 계층 판정)
+            val dtcBoost = item.scoreDetail.dtcBoost
+            val exactThresh = activeWeights.dtcExactBoost
+            val isExactDtcMatch = dtcBoost >= exactThresh && dtcBoost > 0f
+            val isSuffixTypoMatch = dtcBoost >= exactThresh * 0.85f && !isExactDtcMatch
+            val isMiddleTypoMatch = dtcBoost >= exactThresh * 0.70f && !isExactDtcMatch && !isSuffixTypoMatch
+            val isFamilyDtcMatch = dtcBoost >= exactThresh * 0.50f && !isExactDtcMatch && !isSuffixTypoMatch && !isMiddleTypoMatch
 
-            // DTC 일치 시 RRF 최우선권 보장 (Tier 1: 정확 일치 +10.0f, Tier 2: 퍼지 일치 +5.0f)
+            // DTC 일치 시 RRF 최우선권 보장 (Tier 1: 정확 일치 +10.0f, Tier 2/3: 오타 일치 +5.0f, Tier 4: 계통 일치 +2.0f)
             val finalScore = when {
                 isExactDtcMatch -> 10.0f + baseRrfScore
-                isFuzzyDtcMatch -> 5.0f + baseRrfScore
+                isSuffixTypoMatch || isMiddleTypoMatch -> 5.0f + baseRrfScore
+                isFamilyDtcMatch -> 2.0f + baseRrfScore
                 else -> baseRrfScore
             }
 
-            // 신뢰도 백분율 계산 (정확 매칭 98~100%, 퍼지 매칭 90~95%, 일반 RRF 0~89%)
+            // 신뢰도 백분율 계산
+            // - 정확 매칭 (Tier 1): 98 ~ 100%
+            // - 세부코드 끝자리 오타 (Tier 2): 90 ~ 95%
+            // - 부품위치 중간자리 오타 (Tier 3): 85 ~ 89%
+            // - 동일 계통 앞 3자리 일치 (Tier 4): 75 ~ 84%
+            // - 일반 RRF 검색: 0 ~ 74%
             val confidence: Float = when {
-                isExactDtcMatch -> (98.0f + (item.scoreDetail.cosSim * 2.0f)).coerceIn(98.0f, 100.0f)
-                isFuzzyDtcMatch -> {
-                    // 제안 2: 끝자리 오타 보너스(dtcBoost)가 높을수록 90~95% 상위 신뢰도 차등 부여
-                    val boostSpan = activeWeights.dtcExactBoost * 0.25f
+                isExactDtcMatch -> {
+                    (98.0f + (item.scoreDetail.cosSim * 2.0f)).coerceIn(98.0f, 100.0f)
+                }
+                isSuffixTypoMatch -> {
+                    val boostSpan = exactThresh * 0.15f
                     val boostRatio = if (boostSpan > 0f) {
-                        ((item.scoreDetail.dtcBoost - (activeWeights.dtcExactBoost * 0.75f)) / boostSpan).coerceIn(0.0f, 1.0f)
-                    } else {
-                        0.5f
-                    }
+                        ((dtcBoost - (exactThresh * 0.85f)) / boostSpan).coerceIn(0.0f, 1.0f)
+                    } else 0.5f
                     (90.0f + (boostRatio * 5.0f)).coerceIn(90.0f, 95.0f)
                 }
-                else -> ((baseRrfScore / maxTheoreticalRrf) * 89.0f).coerceIn(0.0f, 89.0f)
+                isMiddleTypoMatch -> {
+                    val boostSpan = exactThresh * 0.15f
+                    val boostRatio = if (boostSpan > 0f) {
+                        ((dtcBoost - (exactThresh * 0.70f)) / boostSpan).coerceIn(0.0f, 1.0f)
+                    } else 0.5f
+                    (85.0f + (boostRatio * 4.0f)).coerceIn(85.0f, 89.0f)
+                }
+                isFamilyDtcMatch -> {
+                    val boostSpan = exactThresh * 0.20f
+                    val boostRatio = if (boostSpan > 0f) {
+                        ((dtcBoost - (exactThresh * 0.50f)) / boostSpan).coerceIn(0.0f, 1.0f)
+                    } else 0.5f
+                    (75.0f + (boostRatio * 9.0f)).coerceIn(75.0f, 84.0f)
+                }
+                else -> {
+                    ((baseRrfScore / maxTheoreticalRrf) * 74.0f).coerceIn(0.0f, 74.0f)
+                }
             }
 
             SearchResult(

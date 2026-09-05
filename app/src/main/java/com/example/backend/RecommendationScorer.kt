@@ -160,10 +160,11 @@ class RecommendationScorer(
     }
 
     /**
-     * 자릿수 가중치를 고려한 정밀 DTC 일치/퍼지 점수 계산
-     * - 완전 일치: exactBoost (15.0)
-     * - 1글자 오타: exactBoost * 0.8 (12.0) + 끝자리 보너스 (최대 +1.5점)
-     *   => 끝자리 오타(C120601 vs C120602)가 중간 오타(C120402 vs C120602)보다 높은 점수 획득
+     * 피라미드 4단계 계층형 DTC 일치/퍼지 점수 계산
+     * - 1등급 (완전 일치): exactBoost (15.0점)
+     * - 2등급 (세부코드 끝자리 오타): exactBoost * 0.85 + 끝자리 보너스 (13.0 ~ 13.5점)
+     * - 3등급 (부품위치 중간자리 오타): exactBoost * 0.70 + 위치 보너스 (11.0 ~ 12.0점)
+     * - 4등급 (동일 계통 앞 3자리 일치, 예: C12...): exactBoost * 0.55 ~ 0.60 (8.25 ~ 9.0점)
      */
     fun calculateDtcMatchScore(
         docDtc: String,
@@ -176,9 +177,10 @@ class RecommendationScorer(
         if (s1 == s2 || docTextLower.contains(s2.lowercase())) {
             return exactBoost
         }
-        if (s1.length < 4 || s2.length < 4) return 0.0f
+        if (s1.length < 3 || s2.length < 3) return 0.0f
 
-        if (s1.length == s2.length) {
+        // 1. 동일 길이: 1글자 오타 차등 판정 (2등급 세부코드 오타 vs 3등급 부품위치 오타)
+        if (s1.length == s2.length && s1.length >= 4) {
             var diffCount = 0
             var diffIndex = -1
             for (i in s1.indices) {
@@ -189,16 +191,35 @@ class RecommendationScorer(
             }
             if (diffCount == 1) {
                 val posRatio = diffIndex.toFloat() / (s1.length - 1).toFloat()
-                val posBonus = posRatio * 1.5f
-                return (exactBoost * 0.8f) + posBonus
+                return if (diffIndex >= s1.length - 2) {
+                    // 2등급: 끝자리 부근 세부코드 오타 (13.0 ~ 13.5점)
+                    (exactBoost * 0.85f) + (posRatio * 0.75f)
+                } else {
+                    // 3등급: 중간자리 부품위치 오타 (11.0 ~ 12.0점)
+                    (exactBoost * 0.70f) + (posRatio * 1.5f)
+                }
             }
-        } else if (abs(s1.length - s2.length) == 1) {
+        }
+
+        // 2. 1자 삽입/삭제 길이 차이 (11.25점)
+        if (abs(s1.length - s2.length) == 1 && s1.length >= 4 && s2.length >= 4) {
             if (isDtcLengthDiffMatch(s1, s2)) {
                 return exactBoost * 0.75f
             }
         }
+
+        // 3. 4등급: 동일 제어기/시스템 계통 일치 (앞 3자리 일치, 예: C12..., B12..., P0A...)
+        if (s1.length >= 3 && s2.length >= 3) {
+            val prefix1 = s1.take(3)
+            val prefix2 = s2.take(3)
+            if (prefix1 == prefix2) {
+                val has4Prefix = s1.length >= 4 && s2.length >= 4 && s1.take(4) == s2.take(4)
+                return if (has4Prefix) exactBoost * 0.60f else exactBoost * 0.55f // 9.0f 또는 8.25f
+            }
+        }
+
         if (s1.contains(s2) || s2.contains(s1)) {
-            return exactBoost * 0.7f
+            return exactBoost * 0.50f
         }
         return 0.0f
     }
