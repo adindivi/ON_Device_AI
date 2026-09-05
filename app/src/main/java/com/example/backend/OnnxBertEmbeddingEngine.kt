@@ -62,12 +62,10 @@ class OnnxBertEmbeddingEngine(
 
             val inputIdsTensor = OnnxTensor.createTensor(env, LongBuffer.wrap(encoded.inputIds), shape)
             val attentionMaskTensor = OnnxTensor.createTensor(env, LongBuffer.wrap(encoded.attentionMask), shape)
-            val tokenTypeIdsTensor = OnnxTensor.createTensor(env, LongBuffer.wrap(encoded.tokenTypeIds), shape)
 
             val inputs = mutableMapOf<String, OnnxTensor>()
             inputs["input_ids"] = inputIdsTensor
             inputs["attention_mask"] = attentionMaskTensor
-            inputs["token_type_ids"] = tokenTypeIdsTensor
 
             val results = session?.run(inputs)
             val outputTensor = results?.get(0)?.value
@@ -76,7 +74,6 @@ class OnnxBertEmbeddingEngine(
 
             inputIdsTensor.close()
             attentionMaskTensor.close()
-            tokenTypeIdsTensor.close()
             results?.close()
 
             embeddingVec
