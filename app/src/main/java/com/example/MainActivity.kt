@@ -43,7 +43,17 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIntent(intent: Intent?) {
-        val symptom = intent?.getStringExtra("symptom")
+        var symptom = intent?.getStringExtra("symptom")
+        val symptomB64 = intent?.getStringExtra("symptom_b64")
+        if (!symptomB64.isNullOrBlank()) {
+            try {
+                val bytes = android.util.Base64.decode(symptomB64, android.util.Base64.DEFAULT)
+                symptom = String(bytes, Charsets.UTF_8)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        android.util.Log.i("MainActivity", "handleIntent: symptom='$symptom', autoStart=${intent?.getBooleanExtra("auto_start", false)}")
         if (!symptom.isNullOrBlank()) {
             viewModel.updateSymptomInput(symptom)
         }

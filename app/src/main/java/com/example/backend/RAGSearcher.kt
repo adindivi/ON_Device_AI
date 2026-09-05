@@ -1,5 +1,6 @@
 package com.example.backend
 
+import android.util.Log
 import java.util.regex.Pattern
 import kotlin.math.min
 import kotlin.math.sqrt
@@ -162,7 +163,12 @@ class RAGSearcher(
             )
         }
 
-        return rrfResults.sortedByDescending { it.score }.take(topK)
+        val topResults = rrfResults.sortedByDescending { it.score }.take(topK)
+        Log.i("RAGSearcher", "=== RAG Search: '$query' ===")
+        topResults.forEachIndexed { idx, res ->
+            Log.i("RAGSearcher", "  Top ${idx + 1}: [${res.metadata.dtcCode}] ${res.metadata.component} | ${"%.1f".format(res.confidencePercent)}% | ${res.text.take(50)}")
+        }
+        return topResults
 
     }
 }
