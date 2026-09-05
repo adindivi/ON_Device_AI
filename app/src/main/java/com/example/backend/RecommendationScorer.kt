@@ -9,10 +9,10 @@ import kotlin.math.sqrt
  */
 data class ScoringWeights(
     val dtcExactBoost: Float = 15.0f,    // ⚖️ DTC 우대 및 AI 증상 유사도 균형 조화 수치
-    val compMatchBoost: Float = 1.5f,
-    val textOverlapBoost: Float = 1.0f,
-    val aiAmpScale: Float = 3.0f,
-    val upvoteBonusScale: Float = 0.3f
+    val compMatchBoost: Float = 2.0f,    // 🔩 부품명 직접 매칭 점수 (기본 2.0점)
+    val textOverlapBoost: Float = 1.0f,  // 💬 증상 키워드 일치 점수 (기본 1.0점)
+    val aiAmpScale: Float = 4.0f,        // 🧠 AI 코사인 유사도 증폭 최고점 (기본 4.0점)
+    val upvoteBonusScale: Float = 1.0f   // 👍 현장 정비사 추천 보너스 (기본 1.0점)
 )
 
 /**

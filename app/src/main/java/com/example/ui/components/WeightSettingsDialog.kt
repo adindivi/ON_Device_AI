@@ -311,7 +311,7 @@ fun WeightSettingsDialog(
                     title = "DTC 고장코드 매칭 점수",
                     value = dtcBoost,
                     valueRange = 0.0f..30.0f,
-                    description = "DTC 고장 코드가 같을 때 최우선 부여되는 점수 (기본 10.0점)",
+                    description = "DTC 고장 코드가 같을 때 최우선 부여되는 점수 (기본 15.0점)",
                     onValueChange = { dtcBoost = (it * 2).toInt() / 2.0f }
                 )
 
@@ -321,7 +321,7 @@ fun WeightSettingsDialog(
                     title = "부품명 직접 매칭 점수",
                     value = compBoost,
                     valueRange = 0.0f..5.0f,
-                    description = "입력 문장에 부품명이 직접 일치할 때 부여 점수 (기본 1.5점)",
+                    description = "입력 문장에 부품명이 직접 일치할 때 부여 점수 (기본 2.0점)",
                     onValueChange = { compBoost = (it * 10).toInt() / 10.0f }
                 )
 
@@ -341,7 +341,7 @@ fun WeightSettingsDialog(
                     title = "AI 코사인 유사도 증폭점수",
                     value = aiScale,
                     valueRange = 0.0f..10.0f,
-                    description = "Ko-SBERT AI 문맥 유사도 고신뢰 증폭 최고점 (기본 6.0점, 임계값 50%)",
+                    description = "Ko-SBERT AI 문맥 유사도 고신뢰 증폭 최고점 (기본 4.0점, 임계값 50%)",
                     onValueChange = { aiScale = (it * 2).toInt() / 2.0f }
                 )
 
@@ -351,7 +351,7 @@ fun WeightSettingsDialog(
                     title = "현장 추천 보너스 점수",
                     value = upvoteScale,
                     valueRange = 0.0f..5.0f,
-                    description = "정비사 도움됨 추천 누적 1회당 적용되는 가산점 (기본 0.3점)",
+                    description = "정비사 도움됨 추천 누적 1회당 적용되는 가산점 (기본 1.0점)",
                     onValueChange = { upvoteScale = (it * 10).toInt() / 10.0f }
                 )
 
