@@ -102,11 +102,11 @@ fun ContributionSettingsScreen(
         }
     }
 
-    // [추천 3] 기여 건수 강조형 배지 등급 설정
+    // 애플식 기여도 등급 배지 설정
     val (gradeTag, gradeColor) = when {
-        count >= 10 -> "🥇 마스터 (기여 ${count}건)" to Color(0xFFD97706)
-        count >= 5 -> "🥈 실버 (기여 ${count}건)" to Color(0xFF475569)
-        else -> "🥉 브론즈 (기여 ${count}건)" to Color(0xFFB45309)
+        count >= 10 -> "🥇 명장 정비사 (${count}건)" to Color(0xFFD97706)
+        count >= 5 -> "🥈 든든한 해결사 (${count}건)" to Color(0xFF475569)
+        else -> "🥉 시작하는 정비사 (${count}건)" to Color(0xFFB45309)
     }
 
     val progressFraction = (count / 10f).coerceIn(0f, 1f)
@@ -137,7 +137,7 @@ fun ContributionSettingsScreen(
                 )
             }
             Text(
-                text = "데이터 관리 및 온디바이스 현황",
+                text = "데이터 및 AI 보관함",
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.Bold,
                     color = TossBlack,
@@ -176,7 +176,7 @@ fun ContributionSettingsScreen(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = "스마트폰 내장 DB 연결 상태",
+                                        text = "오프라인 진단 데이터",
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White
@@ -187,24 +187,24 @@ fun ContributionSettingsScreen(
                                         .clip(RoundedCornerShape(6.dp))
                                         .background(Color(0xFF0284C7))
                                         .clickable {
-                                            refreshKey++
-                                            onRefreshStatus?.invoke()
-                                            android.widget.Toast.makeText(context, "🔄 스마트폰 DB 연결 상태가 새로고침되었습니다.", android.widget.Toast.LENGTH_SHORT).show()
-                                        }
-                                        .padding(horizontal = 7.dp, vertical = 3.dp)
-                                ) {
-                                    Text(
-                                        text = "정상 연동됨",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White
-                                    )
-                                }
+                                             refreshKey++
+                                             onRefreshStatus?.invoke()
+                                             android.widget.Toast.makeText(context, "🔄 오프라인 진단 데이터가 최신 상태입니다.", android.widget.Toast.LENGTH_SHORT).show()
+                                         }
+                                         .padding(horizontal = 7.dp, vertical = 3.dp)
+                                 ) {
+                                     Text(
+                                         text = "최신 상태",
+                                         fontSize = 10.sp,
+                                         fontWeight = FontWeight.Bold,
+                                         color = Color.White
+                                     )
+                                 }
                             }
 
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                text = "기본 DB 경로: ${status.dbFolderPath}",
+                                text = "기기 내 안전하게 저장됨",
                                 fontSize = 11.sp,
                                 color = Color(0xFF94A3B8)
                             )
@@ -220,31 +220,26 @@ fun ContributionSettingsScreen(
                                     .border(1.dp, Color(0xFF334155), RoundedCornerShape(10.dp))
                                     .padding(10.dp)
                             ) {
-                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                     Text(
-                                        text = "📁 온디바이스 파일 구성 가이드",
+                                        text = "📁 기기 내 AI 엔진 구성",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF38BDF8)
                                     )
                                     Text(
-                                        text = "• GGUF 모델: qwen2.5-1.5b-instruct-q4_k_m.gguf (4-bit)",
-                                        style = MaterialTheme.typography.bodyMedium,
+                                        text = "• 진단 언어 모델: Qwen 1.5B (온디바이스)",
+                                        fontSize = 10.5.sp,
                                         color = Color(0xFFCBD5E1)
                                     )
                                     Text(
-                                        text = "• RAG 벡터 DB: rag_vector_database.json",
-                                        fontSize = 10.sp,
+                                        text = "• 정비 지식 데이터: 263개 핵심 정비 사례",
+                                        fontSize = 10.5.sp,
                                         color = Color(0xFFCBD5E1)
                                     )
                                     Text(
-                                        text = "• 어휘 사전: mapping_dictionary.json",
-                                        fontSize = 10.sp,
-                                        color = Color(0xFFCBD5E1)
-                                    )
-                                    Text(
-                                        text = "• 정비 문서 폴더: DB/rag_documents/",
-                                        fontSize = 10.sp,
+                                        text = "• 차량 부품 사전: 실시간 어휘 매핑 활성화",
+                                        fontSize = 10.5.sp,
                                         color = Color(0xFFCBD5E1)
                                     )
                                 }
@@ -276,8 +271,8 @@ fun ContributionSettingsScreen(
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Text(
-                                            text = "GGUF LLM 모델: " +
-                                                    if (status.isQwenModelFound) "qwen2.5-1.5b-instruct-q4_k_m.gguf 로드 완료" else "qwen2.5-1.5b-instruct-q4_k_m.gguf 파일 직접 선택 (탭하여 로드)",
+                                            text = "AI 진단 모델: " +
+                                                    if (status.isQwenModelFound) "Qwen 1.5B 준비 완료" else "직접 파일 선택 (탭하여 로드)",
                                             fontSize = 10.5.sp,
                                             color = Color(0xFFE2E8F0),
                                             modifier = Modifier.clickable { qwenPickerLauncher.launch(arrayOf("*/*")) }
@@ -294,7 +289,7 @@ fun ContributionSettingsScreen(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = "RAG 벡터 DB: 총 ${status.totalVectorDocuments}건 문서 임베딩 연동됨",
+                                        text = "정비 지식 데이터: 총 ${status.totalVectorDocuments}건 사례 준비됨",
                                         fontSize = 10.5.sp,
                                         color = Color(0xFFE2E8F0)
                                     )
@@ -309,7 +304,7 @@ fun ContributionSettingsScreen(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = "부품 매핑 사전: 동적 부품/위치 어휘 매핑 활성화",
+                                        text = "차량 부품 사전: 실시간 동기화됨",
                                         fontSize = 10.5.sp,
                                         color = Color(0xFFE2E8F0)
                                     )
@@ -330,14 +325,15 @@ fun ContributionSettingsScreen(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "🤖 큐웬 AI 상세 답변 생성",
+                                        text = "🤖 AI 종합 진단서 작성",
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White
                                     )
                                     Text(
-                                        text = if (isQwenAnswerEnabled) "ON: 정비 카드 + AI 종합 진단서 작성" else "OFF: RAG 고속 진단 모드 (정비 카드 중심 표출)",
+                                        text = if (isQwenAnswerEnabled) "핵심 정비 카드와 함께 AI 심층 분석을 제공합니다" else "빠른 진단을 위해 핵심 정비 카드만 표시합니다",
                                         fontSize = 10.sp,
+                                        lineHeight = 14.sp,
                                         color = if (isQwenAnswerEnabled) Color(0xFF38BDF8) else Color(0xFF94A3B8)
                                     )
                                 }
@@ -377,7 +373,7 @@ fun ContributionSettingsScreen(
                         ) {
                             Column {
                                 Text(
-                                    text = "내가 등록한 해결방안",
+                                    text = "내가 남긴 정비 노하우",
                                     fontSize = 12.sp,
                                     color = TossGray500
                                 )
@@ -389,7 +385,7 @@ fun ContributionSettingsScreen(
                                 )
                             }
 
-                            // 모바일 핏 컴팩트 배지 [추천 3 적용]
+                            // 모바일 핏 컴팩트 배지
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(8.dp))
@@ -421,12 +417,17 @@ fun ContributionSettingsScreen(
 
                         Spacer(modifier = Modifier.height(4.dp))
 
+                        val remaining = (10 - count).coerceAtLeast(0)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("기본 (브론즈)", fontSize = 10.sp, color = TossGray400)
-                            Text("목표 (마스터: 10건)", fontSize = 10.sp, color = TossGray400)
+                            Text("시작", fontSize = 10.sp, color = TossGray400)
+                            Text(
+                                if (remaining == 0) "최고 등급 달성" else "명장 정비사까지 ${remaining}건",
+                                fontSize = 10.sp,
+                                color = TossGray400
+                            )
                         }
                     }
                 }
@@ -440,7 +441,7 @@ fun ContributionSettingsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "등록된 해결방안 목록",
+                        text = "나의 정비 노트",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = TossBlack,
@@ -466,7 +467,7 @@ fun ContributionSettingsScreen(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                "해결방안 등록",
+                                "노하우 추가",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = TossWhite
@@ -488,11 +489,12 @@ fun ContributionSettingsScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "아직 직접 등록한 수리 조치 방안이 없습니다.\n상단의 [+ 해결방안 등록] 버튼으로 추가해 보세요!",
+                            text = "아직 저장된 정비 노하우가 없어요.\n나만의 수리 팁을 남겨두면 AI가 진단할 때 함께 활용해요.",
                             color = TossGray400,
                             fontSize = 12.sp,
                             lineHeight = 18.sp,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                     }
                 }
@@ -645,7 +647,7 @@ fun ContributionSettingsScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "온디바이스 AI 시스템 사양",
+                                text = "온디바이스 시스템 정보",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = TossBlack,
@@ -661,22 +663,22 @@ fun ContributionSettingsScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("AI 모델 엔진", fontSize = 11.5.sp, color = TossGray500)
-                                Text("Qwen-2.5-1.5B On-Device", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = TossBlack)
+                                Text("진단 언어 모델", fontSize = 11.5.sp, color = TossGray500)
+                                Text("Qwen 1.5B (기기 내 독립 구동)", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = TossBlack)
                             }
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("RAG 벡터 검색 DB", fontSize = 11.5.sp, color = TossGray500)
-                                Text("Local SQLite Room DB", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = TossBlack)
+                                Text("지식 데이터베이스", fontSize = 11.5.sp, color = TossGray500)
+                                Text("기기 내 안전 보관 (Room DB)", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = TossBlack)
                             }
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("오프라인 추론 지원", fontSize = 11.5.sp, color = TossGray500)
-                                Text("완전 지원 (네트워크 불필요)", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF16A34A))
+                                Text("인터넷 연결", fontSize = 11.5.sp, color = TossGray500)
+                                Text("연결 없이 즉시 작동", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF16A34A))
                             }
                         }
                     }
