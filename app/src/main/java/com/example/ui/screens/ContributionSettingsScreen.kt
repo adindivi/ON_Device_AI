@@ -336,7 +336,7 @@ fun ContributionSettingsScreen(
                                         color = Color.White
                                     )
                                     Text(
-                                        text = if (isQwenAnswerEnabled) "ON: 정비 카드 + AI 종합 진단서 작성" else "OFF: 0.05초 초고속 모드 (정비 카드만 표출)",
+                                        text = if (isQwenAnswerEnabled) "ON: 정비 카드 + AI 종합 진단서 작성" else "OFF: RAG 고속 진단 모드 (정비 카드 중심 표출)",
                                         fontSize = 10.sp,
                                         color = if (isQwenAnswerEnabled) Color(0xFF38BDF8) else Color(0xFF94A3B8)
                                     )

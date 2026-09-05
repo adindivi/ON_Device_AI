@@ -50,12 +50,12 @@ class DiagnoseSymptomUseCase(
             }
 
             val solutionText = if (topMatch != null) {
-                "⚡ [초고속 진단 모드] 큐웬 AI 답변 생성이 꺼져 있습니다.\n\n" +
+                "⚡ [온디바이스 RAG 진단] 큐웬 AI 상세 생성을 건너뛰고 Ko-SBERT RAG 데이터베이스를 기반으로 도출된 핵심 점검 가이드입니다.\n\n" +
                 "• 1순위 추천 정비: [${topMatch.metadata.component.ifBlank { "관련 부품" }}] " +
                 (if (topMatch.metadata.connectorLocation.isNotBlank()) "위치: ${topMatch.metadata.connectorLocation}\n" else "\n") +
                 "• 권장 점검: ${topMatch.text}"
             } else {
-                "⚡ [초고속 진단 모드] 일치하는 정비 문서를 찾지 못했습니다."
+                "⚡ [온디바이스 RAG 진단] 일치하는 정비 문서를 찾지 못했습니다."
             }
 
             val warningText = if (topMatch != null) {

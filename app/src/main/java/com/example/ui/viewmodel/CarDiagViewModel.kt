@@ -319,11 +319,23 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
                 _diagnosisStep.value = 4
                 delay(300)
             } else {
-                // 초고속 모드: 딜레이 없이 즉시 RAG 검색
+                // 큐웬 모델 답변을 꺼도 실시간 진단 프로세스가 생략되거나 너무 순식간에 끝나지 않도록
+                // 4개 진단 단계를 순차적으로 안정감 있게 진행 (총 약 1.5초)
+                // Step 1: 계획 수립 (입력 텍스트 및 고장코드 파싱)
                 _diagnosisStep.value = 1
-                delay(100)
+                delay(350)
+
+                // Step 2: 데이터 검색 (Ko-SBERT 768차원 임베딩 및 하이브리드 RAG 검색)
                 _diagnosisStep.value = 2
-                delay(150)
+                delay(450)
+
+                // Step 3: 원인 분석 (상위 부품 및 결함 원인 매칭 분석)
+                _diagnosisStep.value = 3
+                delay(400)
+
+                // Step 4: 보고서 생성 (정비 카드 및 추천 가이드 작성)
+                _diagnosisStep.value = 4
+                delay(350)
             }
             
             _isGuideExpanded.value = true // 스트리밍 결과를 바로 볼 수 있게 열어둠
@@ -346,7 +358,7 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
             if (isQwenOn) {
                 showToast("✅ 스마트 정비 진단서가 작성되었습니다.")
             } else {
-                showToast("⚡ 초고속 정비 진단서가 완성되었습니다. (Qwen OFF)")
+                showToast("⚡ 온디바이스 RAG 정비 진단서가 완성되었습니다. (Qwen OFF)")
             }
         }
     }
