@@ -3,6 +3,7 @@ package com.example.backend
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
+import android.util.Log
 import java.io.File
 import java.nio.LongBuffer
 import kotlin.math.sqrt
@@ -23,7 +24,9 @@ class OnnxBertEmbeddingEngine(
     }
 
     fun initEngine(): Boolean {
+        Log.d("OnnxBert", "initEngine: path=${modelFile.absolutePath}, exists=${modelFile.exists()}, size=${modelFile.length()}B")
         if (!modelFile.exists() || modelFile.length() == 0L) {
+            Log.w("OnnxBert", "⚠️ ONNX model not found or empty → isReady=false, will use hash fallback")
             isReady = false
             return false
         }
@@ -34,12 +37,16 @@ class OnnxBertEmbeddingEngine(
 
             if (vocabFile != null && vocabFile.exists()) {
                 tokenizer = BertTokenizer.loadFromFile(vocabFile)
+                Log.d("OnnxBert", "Vocab loaded: ${vocabFile.absolutePath}, size=${vocabFile.length()}B")
+            } else {
+                Log.w("OnnxBert", "Vocab file missing, using default tokenizer")
             }
 
             isReady = true
+            Log.i("OnnxBert", "✅ ONNX KoSBERT loaded successfully! isReady=true, model=${modelFile.length() / 1024 / 1024}MB")
             true
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("OnnxBert", "❌ ONNX load failed: ${e.message}", e)
             isReady = false
             false
         }
