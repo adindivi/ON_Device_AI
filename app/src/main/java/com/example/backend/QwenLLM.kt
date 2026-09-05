@@ -118,18 +118,44 @@ class QwenLLM(private val context: android.content.Context, private val modelFil
 
         val personaResponse = "🤖 \"정비사님, [$compName$dtcStr$connStr] 점검 가이드입니다.\n$dbAction\""
 
-        // 큐웬 2.5 채팅 템플릿 형식 (AI가 이어서 답변하도록 유도)
+        // 큐웬 2.5 공식 RAG 최적화 프롬프트 템플릿 (XML 태그 격리 및 3단계 체크리스트 유도)
+        val assistantPrefix = "1. 외관 점검: "
+        val candidatesInfo = if (contextDocs.size > 1) {
+            val others = contextDocs.drop(1).take(2).mapIndexed { idx, doc ->
+                val c = doc.metadata.component.ifBlank { "부품" }
+                val d = if (doc.metadata.dtcCode.isNotBlank()) " (${doc.metadata.dtcCode})" else ""
+                "- 연관 후보 ${idx + 2}: $c$d"
+            }.joinToString("\n")
+            "\n$others"
+        } else {
+            ""
+        }
+
         val chatPrompt = "<|im_start|>system\n" +
-                "당신은 자동차 정비 전문가 AI입니다. 정비사에게 실용적인 조언을 한국어로 제공하세요.<|im_end|>\n" +
+                "당신은 차량 정비 현장 지침을 요약 전달하는 테크니컬 어시스턴트입니다.\n" +
+                "아래 규칙을 엄격히 준수하십시오:\n" +
+                "1. 인사말, 서론, 맺음말은 일절 출력하지 않습니다.\n" +
+                "2. 반드시 제공된 <context> 내의 공식 정비 정보에만 근거하여 작성하십시오.\n" +
+                "3. 한국어로 전문적이고 간결한 체크리스트 형식으로 작성하십시오.<|im_end|>\n" +
                 "<|im_start|>user\n" +
-                "다음 차량 고장 정보를 분석하고 정비 조치 방안을 알려주세요:\n" +
-                "증상: $query\n" +
-                "관련 부품: $compName $dtcStr\n" +
-                "DB 조치사항: $dbAction<|im_end|>\n" +
-                "<|im_start|>assistant\n"
+                "<context>\n" +
+                "- 고장 코드: ${dtcCode.ifBlank { "해당 없음" }}\n" +
+                "- 대상 부품: $compName$connStr\n" +
+                "- 공식 지침서: $dbAction\n" +
+                "- 입력 증상: $query$candidatesInfo\n" +
+                "</context>\n\n" +
+                "<instruction>\n" +
+                "위 <context>를 바탕으로 정비사가 현장에서 즉시 점검할 3단계 조치 절차를 작성하십시오.\n" +
+                "- 1단계: 외관/배선 점검\n" +
+                "- 2단계: 측정/신호 점검\n" +
+                "- 3단계: 부품 조치 기준\n" +
+                "각 단계는 1문장 이내로 핵심만 작성하십시오.\n" +
+                "</instruction><|im_end|>\n" +
+                "<|im_start|>assistant\n" +
+                assistantPrefix
 
         return flow {
-            emit(personaResponse + "\n\n📝 AI 추가 분석:\n")
+            emit(personaResponse + "\n\n📝 AI 현장 점검 3단계:\n" + assistantPrefix)
             try {
                 llamaBridge.streamInference(chatPrompt).collect { token ->
                     emit(token)
