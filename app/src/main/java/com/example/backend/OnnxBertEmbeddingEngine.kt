@@ -53,33 +53,43 @@ class OnnxBertEmbeddingEngine(
     }
 
     fun getEmbedding(text: String, isQuery: Boolean = false): List<Float>? {
-        if (!isReady || session == null || env == null) return null
+        if (!isReady || session == null || env == null) {
+            Log.w("OnnxBertEngine", "[Ko-SBERT 임베딩 불가] isReady=$isReady, session=${session != null}, env=${env != null}")
+            return null
+        }
+
+        val startTime = System.currentTimeMillis()
+        var inputIdsTensor: OnnxTensor? = null
+        var attentionMaskTensor: OnnxTensor? = null
+        var results: OrtSession.Result? = null
 
         return try {
             val encoded = tokenizer.encode(text, isQuery = isQuery)
             val maxLen = encoded.inputIds.size.toLong()
             val shape = longArrayOf(1, maxLen)
 
-            val inputIdsTensor = OnnxTensor.createTensor(env, LongBuffer.wrap(encoded.inputIds), shape)
-            val attentionMaskTensor = OnnxTensor.createTensor(env, LongBuffer.wrap(encoded.attentionMask), shape)
+            inputIdsTensor = OnnxTensor.createTensor(env, LongBuffer.wrap(encoded.inputIds), shape)
+            attentionMaskTensor = OnnxTensor.createTensor(env, LongBuffer.wrap(encoded.attentionMask), shape)
 
-            val inputs = mutableMapOf<String, OnnxTensor>()
-            inputs["input_ids"] = inputIdsTensor
-            inputs["attention_mask"] = attentionMaskTensor
+            val inputs = mapOf(
+                "input_ids" to inputIdsTensor,
+                "attention_mask" to attentionMaskTensor
+            )
 
-            val results = session?.run(inputs)
+            results = session?.run(inputs)
             val outputTensor = results?.get(0)?.value
 
             val embeddingVec = processOutputTensor(outputTensor, encoded.attentionMask)
-
-            inputIdsTensor.close()
-            attentionMaskTensor.close()
-            results?.close()
-
+            val elapsedMs = System.currentTimeMillis() - startTime
+            Log.d("OnnxBertEngine", "[Ko-SBERT 임베딩 성공] 소요시간=${elapsedMs}ms, 토큰수=$maxLen, 차원=${embeddingVec.size}")
             embeddingVec
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("OnnxBertEngine", "❌ [Ko-SBERT 임베딩 추론 실패] text='${text.take(50)}', isReady=$isReady, 예외: ${e.message}", e)
             null
+        } finally {
+            try { inputIdsTensor?.close() } catch (_: Exception) {}
+            try { attentionMaskTensor?.close() } catch (_: Exception) {}
+            try { results?.close() } catch (_: Exception) {}
         }
     }
 

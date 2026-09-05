@@ -35,8 +35,11 @@ class QwenLLM(private val context: android.content.Context, private val modelFil
             val success = try {
                 val internalFile = File(context.filesDir, "qwen_model.gguf")
                 
-                // 파일 무결성 검증 로직 개선 (단순 용량 비교가 아닌, 스트림 복사 여부 명확화)
-                val needCopy = !internalFile.exists() || internalFile.length() < 1_000_000_000L
+                val uriLength = try {
+                    context.contentResolver.openFileDescriptor(uri, "r")?.use { it.statSize } ?: -1L
+                } catch (_: Exception) { -1L }
+
+                val needCopy = !internalFile.exists() || (uriLength > 0L && internalFile.length() != uriLength) || internalFile.length() < 100_000_000L
 
                 if (needCopy) {
                     withContext(Dispatchers.IO) {
@@ -56,14 +59,17 @@ class QwenLLM(private val context: android.content.Context, private val modelFil
                         loadedFromUri = true
                         isModelAvailable = true
                         customModelPath = "Copied to Internal: $realPath"
+                        android.util.Log.i("QwenLLM", "✅ [Qwen 모델 로드 성공] 경로: $realPath, 크기: ${internalFile.length()} bytes")
                         true
                     } else {
+                        android.util.Log.e("QwenLLM", "❌ [Qwen 모델 로드 실패] loadModel 결과: $result")
                         false
                     }
                 } else {
                     false
                 }
             } catch (e: Exception) {
+                android.util.Log.e("QwenLLM", "❌ [Qwen 모델 복사/로드 실패] URI: $uri, 예외: ${e.message}", e)
                 e.printStackTrace()
                 false
             }

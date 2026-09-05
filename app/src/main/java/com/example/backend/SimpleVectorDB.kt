@@ -68,8 +68,17 @@ class SimpleVectorDB(private val dbFile: File) {
             dataList.forEach { entry ->
                 jsonArray.put(entry.toJsonObject())
             }
-            dbFile.writeText(jsonArray.toString(2), Charsets.UTF_8)
+            val tempFile = File(dbDir ?: dbFile.parentFile, "${dbFile.name}.tmp")
+            tempFile.writeText(jsonArray.toString(2), Charsets.UTF_8)
+            if (tempFile.exists() && tempFile.length() > 0) {
+                if (dbFile.exists()) {
+                    dbFile.delete()
+                }
+                tempFile.renameTo(dbFile)
+                android.util.Log.i("SimpleVectorDB", "✅ [VectorDB 저장 성공] 총 문서수: ${dataList.size}, 크기: ${dbFile.length()} bytes")
+            }
         } catch (e: Exception) {
+            android.util.Log.e("SimpleVectorDB", "❌ [VectorDB 저장 실패] 파일: ${dbFile.absolutePath}, 예외: ${e.message}", e)
             e.printStackTrace()
         }
     }

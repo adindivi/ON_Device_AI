@@ -33,6 +33,7 @@ import com.example.ui.components.AddRemedyDialog
 import com.example.ui.components.ContributionDashboardDialog
 import com.example.ui.components.DetailReportDialog
 import com.example.ui.components.EditRemedyDialog
+import com.example.ui.components.ErrorAlertDialog
 import com.example.ui.components.HeaderBar
 import com.example.ui.components.PasswordVerificationDialog
 import com.example.ui.components.ScannerOcrDialog
@@ -83,6 +84,7 @@ fun CarDiagApp(viewModel: CarDiagViewModel) {
     val showPasswordModal by viewModel.showPasswordModal.collectAsStateWithLifecycle()
     val showWeightSettingsModal by viewModel.showWeightSettingsModal.collectAsStateWithLifecycle()
     val scoringWeights by viewModel.scoringWeights.collectAsStateWithLifecycle()
+    val errorDialogState by viewModel.errorDialogState.collectAsStateWithLifecycle()
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -263,6 +265,17 @@ fun CarDiagApp(viewModel: CarDiagViewModel) {
                     onDismiss = { viewModel.closeWeightSettingsModal() },
                     onSave = { viewModel.updateScoringWeights(it) },
                     onReset = { viewModel.resetScoringWeights() }
+                )
+            }
+
+            if (errorDialogState.isVisible) {
+                ErrorAlertDialog(
+                    state = errorDialogState,
+                    onDismiss = { viewModel.dismissErrorDialog() },
+                    onRetry = {
+                        viewModel.dismissErrorDialog()
+                        viewModel.startDiagnosis()
+                    }
                 )
             }
 

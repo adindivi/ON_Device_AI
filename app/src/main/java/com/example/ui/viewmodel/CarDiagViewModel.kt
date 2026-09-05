@@ -37,6 +37,14 @@ data class ExtractedMetadata(
     val location: String? = null
 )
 
+data class ErrorDialogState(
+    val isVisible: Boolean = false,
+    val title: String = "진단 안내",
+    val userMessage: String = "",
+    val technicalDetail: String = "",
+    val canRetry: Boolean = true
+)
+
 class CarDiagViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: CarDiagRepository
@@ -173,6 +181,24 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
     private val _showWeightSettingsModal = MutableStateFlow(false)
     val showWeightSettingsModal: StateFlow<Boolean> = _showWeightSettingsModal.asStateFlow()
 
+    // Error Dialog State for User-Friendly Alert Popups
+    private val _errorDialogState = MutableStateFlow(ErrorDialogState())
+    val errorDialogState: StateFlow<ErrorDialogState> = _errorDialogState.asStateFlow()
+
+    fun showErrorDialog(title: String, userMessage: String, technicalDetail: String = "", canRetry: Boolean = true) {
+        _errorDialogState.value = ErrorDialogState(
+            isVisible = true,
+            title = title,
+            userMessage = userMessage,
+            technicalDetail = technicalDetail,
+            canRetry = canRetry
+        )
+    }
+
+    fun dismissErrorDialog() {
+        _errorDialogState.value = _errorDialogState.value.copy(isVisible = false)
+    }
+
     fun openPasswordModal() {
         _showPasswordModal.value = true
     }
@@ -302,63 +328,94 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
 
             val isQwenOn = _isQwenAnswerEnabled.value
 
-            if (isQwenOn) {
-                // Step 1: 계획 수립 (Plan)
-                _diagnosisStep.value = 1
-                delay(400)
+            try {
+                if (isQwenOn) {
+                    // Step 1: 계획 수립 (Plan)
+                    _diagnosisStep.value = 1
+                    delay(400)
 
-                // Step 2: 벡터 DB RAG 검색 (rag_vector_database.json)
-                _diagnosisStep.value = 2
-                delay(500)
+                    // Step 2: 벡터 DB RAG 검색 (rag_vector_database.json)
+                    _diagnosisStep.value = 2
+                    delay(500)
 
-                // Step 3: 온디바이스 Qwen-2.5 LLM 원인 분석
-                _diagnosisStep.value = 3
-                delay(600)
+                    // Step 3: 온디바이스 Qwen-2.5 LLM 원인 분석
+                    _diagnosisStep.value = 3
+                    delay(600)
 
-                // Step 4: 종합 진단 보고서 작성 (스트리밍 시작)
-                _diagnosisStep.value = 4
-                delay(300)
-            } else {
-                // 큐웬 모델 답변을 꺼도 실시간 진단 프로세스가 생략되거나 너무 순식간에 끝나지 않도록
-                // 4개 진단 단계를 순차적으로 안정감 있게 진행 (총 약 1.5초)
-                // Step 1: 계획 수립 (입력 텍스트 및 고장코드 파싱)
-                _diagnosisStep.value = 1
-                delay(350)
+                    // Step 4: 종합 진단 보고서 작성 (스트리밍 시작)
+                    _diagnosisStep.value = 4
+                    delay(300)
+                } else {
+                    // 큐웬 모델 답변을 꺼도 실시간 진단 프로세스가 생략되거나 너무 순식간에 끝나지 않도록
+                    // 4개 진단 단계를 순차적으로 안정감 있게 진행 (총 약 1.5초)
+                    // Step 1: 계획 수립 (입력 텍스트 및 고장코드 파싱)
+                    _diagnosisStep.value = 1
+                    delay(350)
 
-                // Step 2: 데이터 검색 (Ko-SBERT 768차원 임베딩 및 하이브리드 RAG 검색)
-                _diagnosisStep.value = 2
-                delay(450)
+                    // Step 2: 데이터 검색 (Ko-SBERT 768차원 임베딩 및 하이브리드 RAG 검색)
+                    _diagnosisStep.value = 2
+                    delay(450)
 
-                // Step 3: 원인 분석 (상위 부품 및 결함 원인 매칭 분석)
-                _diagnosisStep.value = 3
-                delay(400)
+                    // Step 3: 원인 분석 (상위 부품 및 결함 원인 매칭 분석)
+                    _diagnosisStep.value = 3
+                    delay(400)
 
-                // Step 4: 보고서 생성 (정비 카드 및 추천 가이드 작성)
-                _diagnosisStep.value = 4
-                delay(350)
-            }
-            
-            _isGuideExpanded.value = true // 스트리밍 결과를 바로 볼 수 있게 열어둠
+                    // Step 4: 보고서 생성 (정비 카드 및 추천 가이드 작성)
+                    _diagnosisStep.value = 4
+                    delay(350)
+                }
+                
+                _isGuideExpanded.value = true // 스트리밍 결과를 바로 볼 수 있게 열어둠
 
-            withContext(Dispatchers.IO) {
-                diagnoseUseCase.executeStream(queryDtc, querySymptom, isQwenEnabled = isQwenOn).collect { diagnosisResult ->
-                    withContext(Dispatchers.Main) {
-                        val newHistory = diagnosisResult.history
-                        _activeResultMatches.value = diagnosisResult.matches
-                        _activeResult.value = newHistory
+                withContext(Dispatchers.IO) {
+                    diagnoseUseCase.executeStream(queryDtc, querySymptom, isQwenEnabled = isQwenOn).collect { diagnosisResult ->
+                        withContext(Dispatchers.Main) {
+                            val newHistory = diagnosisResult.history
+                            _activeResultMatches.value = diagnosisResult.matches
+                            _activeResult.value = newHistory
+                        }
                     }
                 }
-            }
-            
-            // Save to DB (최종 완료된 결과만 저장)
-            _activeResult.value?.let { repository.insertHistory(it) }
+                
+                // Save to DB (최종 완료된 결과만 저장)
+                _activeResult.value?.let { repository.insertHistory(it) }
 
-            _isDiagnosing.value = false
-            refreshBackendStatus()
-            if (isQwenOn) {
-                showToast("✅ 스마트 정비 진단서가 작성되었습니다.")
-            } else {
-                showToast("⚡ 온디바이스 RAG 정비 진단서가 완성되었습니다. (Qwen OFF)")
+                _isDiagnosing.value = false
+                refreshBackendStatus()
+                if (isQwenOn) {
+                    showToast("✅ 스마트 정비 진단서가 작성되었습니다.")
+                } else {
+                    showToast("⚡ 온디바이스 RAG 정비 진단서가 완성되었습니다. (Qwen OFF)")
+                }
+            } catch (e: Throwable) {
+                android.util.Log.e("CarDiagViewModel", "❌ [진단 실패] queryDtc='$queryDtc', symptom='$querySymptom', Qwen=$isQwenOn, 예외: ${e.message}", e)
+                _isDiagnosing.value = false
+                _diagnosisStep.value = 0
+
+                val friendlyMessage = when {
+                    e is OutOfMemoryError || e.message?.contains("OutOfMemory", ignoreCase = true) == true ->
+                        "스마트폰의 실행 메모리(RAM)가 일시적으로 부족하여 진단이 중단되었습니다. 백그라운드 앱들을 정리한 후 다시 시도해 주세요."
+                    e.message?.contains("OrtException", ignoreCase = true) == true ->
+                        "온디바이스 AI 임베딩 엔진 처리 중 텐서 오류가 발생했습니다. 잠시 후 다시 시도해 주시기 바랍니다."
+                    e.message?.contains("ENOSPC", ignoreCase = true) == true ->
+                        "기기의 내부 저장 공간이 부족합니다. 여유 공간을 확보한 후 다시 시도해 주세요."
+                    else ->
+                        "차량 고장 증상을 분석하는 도중 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해 주시기 바랍니다."
+                }
+
+                val techDetail = buildString {
+                    appendLine("• 오류 클래스: ${e.javaClass.simpleName}")
+                    appendLine("• 원인 메시지: ${e.message ?: "원인 미상"}")
+                    appendLine("• 입력 조건: DTC [${queryDtc.ifBlank { "없음" }}] | 증상 [${querySymptom.ifBlank { "없음" }}]")
+                    appendLine("• Qwen 모드: ${if (isQwenOn) "ON" else "OFF"}")
+                }
+
+                showErrorDialog(
+                    title = "차량 진단 안내",
+                    userMessage = friendlyMessage,
+                    technicalDetail = techDetail,
+                    canRetry = true
+                )
             }
         }
     }
