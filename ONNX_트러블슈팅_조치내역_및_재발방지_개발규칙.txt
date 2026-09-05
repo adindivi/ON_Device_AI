@@ -1,0 +1,91 @@
+================================================================================
+     ONNX 모델 로딩 & 텐서 불일치 트러블슈팅 상세 조치 내역 및 범용 개발 규칙
+================================================================================
+
+작성일자: 2026-09-05
+적용 환경: Android (Kotlin), ONNX Runtime Mobile, On-Device AI
+
+--------------------------------------------------------------------------------
+1. 상세 조치 내역 (어떻게 해결했는가?)
+--------------------------------------------------------------------------------
+
+[1단계] 모델 파일 저장소 격리 (Scoped Storage 해결)
+- 파일: OnDeviceBackendEngine.kt
+- 문제:
+  공용 디렉토리(/storage/emulated/0/DB/)는 Android 11+ 보안 정책에 의해 앱이
+  직접 파일을 생성하거나 쓸 수 없음(EPERM / EACCES 발생).
+  assets에서 모델을 복사하려 했으나 실패하여 onnxBertModelFile.exists()가 항상 false가 됨.
+- 해결 조치:
+  복사 대상을 외부 공용 폴더가 아닌 앱 샌드박스 내부 전용 저장소인 `context.filesDir`
+  하위(files/onnx_models/)로 변경.
+  * 추가 최적화: APK 내부 assets 압축 문제로 openFd()가 실패하던 현상을
+    `context.assets.open(assetPath)` 스트림 복사 방식으로 교체하고,
+    이미 복사된 경우(length > 1000) 재복사를 스킵하여 앱 구동 속도 보장.
+
+[2단계] ONNX 모델 입출력 스펙 정밀 역설계 검증
+- 수단: Python onnxruntime을 통한 ONNX 메타데이터 추출
+  ```python
+  import onnxruntime as ort
+  sess = ort.InferenceSession("ko-sbert-multitask_embedding.onnx")
+  # [결과 확인]
+  # Inputs:  input_ids, attention_mask (총 2개만 허용)
+  # Outputs: last_hidden_state, tanh
+  ```
+- 문제 원인:
+  코드에서는 일반적인 레거시 BERT 구조를 가정하여 `token_type_ids`까지 3개의
+  텐서를 session.run()에 주입하고 있었음.
+  이로 인해 `OrtException: Unexpected number of inputs, expected [1,2) found 3`
+  에러가 매 검색마다 터짐.
+
+[3단계] OnnxBertEmbeddingEngine 코드 수정
+- 파일: OnnxBertEmbeddingEngine.kt
+- 수정 전:
+  ```kotlin
+  val inputs = mutableMapOf<String, OnnxTensor>()
+  inputs["input_ids"] = inputIdsTensor
+  inputs["attention_mask"] = attentionMaskTensor
+  inputs["token_type_ids"] = tokenTypeIdsTensor // ❌ 모델이 거부하여 에러 발생
+
+  val results = session?.run(inputs)
+  ```
+- 수정 후:
+  ```kotlin
+  val inputs = mutableMapOf<String, OnnxTensor>()
+  inputs["input_ids"] = inputIdsTensor
+  inputs["attention_mask"] = attentionMaskTensor // ✅ 모델 스펙에 맞게 2개만 주입
+
+  val results = session?.run(inputs)
+  ```
+- 가시성 확보:
+  initEngine() 및 런타임에 Log.i / Log.e를 추가하여 ONNX 로딩 및 추론 성공 여부를
+  Logcat에서 실시간으로 확인할 수 있도록 조치.
+
+
+================================================================================
+2. 향후 프로젝트를 위한 범용 개발 규칙 (Ruleset 문장)
+================================================================================
+
+앞으로 모바일/온디바이스 AI 앱 개발 시 동일한 문제를 원천 차단하기 위해
+프로젝트 규칙(GEMINI.md 또는 System Rules)에 추가할 수 있는 표준 가이드라인입니다.
+
+--------------------------------------------------------------------------------
+[규칙 1] 온디바이스 모델 파일의 저장소 위치 원칙 (Android Storage Isolation)
+"APK assets에 포함된 대용량 AI 모델(GGUF, ONNX, TFLite 등)을 런타임에 디스크로
+추출할 때는, 외부 공용 저장소(/storage/emulated/0)를 절대 사용하지 말고
+반드시 앱 전용 내부 저장소(context.filesDir 또는 context.noBackupFilesDir)에
+저장해야 한다. Android 11(API 30)+ Scoped Storage로 인한 EPERM/EACCES 쓰기 거부를
+방지하고, 파일 존재 여부(file.exists() && file.length() > 0)를 체크하여 중복 복사를
+방지한다."
+
+[규칙 2] ONNX / 딥러닝 모델의 텐서 입출력 스펙 사전 검증 원칙 (Strict Tensor Signature)
+"임베딩 및 추론 엔진 연동 전, 반드시 모델의 실제 입력 텐서 이름과 개수(Signature)를
+사전 검증(Python onnxruntime 또는 Netron 도구 활용)한 후 코드를 작성해야 한다.
+특히 RoBERTa/SBERT/Modern-BERT 계열 모델은 token_type_ids를 지원하지 않으므로,
+코드에서 임의로 3개 텐서를 주입해 OrtException이 발생하지 않도록 주의한다."
+
+[규칙 3] 무음 실패(Silent Catch Fallback) 금지 및 로깅 의무화 (No Silent Fallback)
+"AI 모델 추론 실패 시 단순 catch 블록으로 에러를 삼키고 가짜 데이터나 해시(Hash)
+폴백으로 조용히 넘어가지 않도록 한다. 모델 로드 상태(isReady), 입력 텐서 형태,
+추론 시간, 예외 발생 내용을 반드시 Logcat(Log.e/Log.w)에 명시적으로 기록하여
+임베딩 엔진이 정상 가동 중인지 런타임에 즉시 판별할 수 있어야 한다."
+================================================================================
