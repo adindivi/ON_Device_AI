@@ -131,11 +131,13 @@ class RAGSearcher(
             IntermediateEntry(entry, detail)
         }
 
-        // 1. Keyword Track Ranking (1-indexed)
-        val keywordRanked = intermediateList.sortedByDescending { it.scoreDetail.keywordTrackScore + it.scoreDetail.bonusScore }
-        val keywordRankMap = keywordRanked.mapIndexed { index, item -> item.entry.id to (index + 1) }.toMap()
+        // 1. Keyword Track Ranking: Only include documents with actual keyword/DTC/comp matches (score > 0f)
+        val keywordMatchingItems = intermediateList
+            .filter { it.scoreDetail.keywordTrackScore > 0f }
+            .sortedByDescending { it.scoreDetail.keywordTrackScore + it.scoreDetail.bonusScore }
+        val keywordRankMap = keywordMatchingItems.mapIndexed { index, item -> item.entry.id to (index + 1) }.toMap()
 
-        // 2. Vector Track Ranking (1-indexed)
+        // 2. Vector Track Ranking (all items ranked by semantic similarity + bonus)
         val vectorRanked = intermediateList.sortedByDescending { it.scoreDetail.vectorTrackScore + it.scoreDetail.bonusScore }
         val vectorRankMap = vectorRanked.mapIndexed { index, item -> item.entry.id to (index + 1) }.toMap()
 
@@ -147,25 +149,40 @@ class RAGSearcher(
         val maxTheoreticalRrf = (wKeyword / (kConstant + 1.0f)) + (wVector / (kConstant + 1.0f))
 
         val rrfResults = intermediateList.map { item ->
-            val kRank = keywordRankMap[item.entry.id] ?: intermediateList.size
+            val kRank = keywordRankMap[item.entry.id]
             val vRank = vectorRankMap[item.entry.id] ?: intermediateList.size
 
-            val rrfScore = (wKeyword / (kConstant + kRank)) + (wVector / (kConstant + vRank))
-
-            // Check if exact DTC match occurred
-            val isExactDtcMatch = item.scoreDetail.dtcBoost >= activeWeights.dtcExactBoost && item.scoreDetail.dtcBoost > 0f
-
-            // Calculate confidence percentage smoothly scaled to 0~100%
-            val confidence: Float = if (isExactDtcMatch) {
-                (98.0f + (item.scoreDetail.cosSim * 2.0f)).coerceIn(98.0f, 100.0f)
+            // 키워드 점수가 0점인 문서는 키워드 트랙 RRF 점수 기여분을 0.0으로 배제
+            val kwContribution = if (kRank != null && item.scoreDetail.keywordTrackScore > 0f) {
+                wKeyword / (kConstant + kRank)
             } else {
-                ((rrfScore / maxTheoreticalRrf) * 100.0f).coerceIn(0.0f, 100.0f)
+                0.0f
+            }
+            val vecContribution = wVector / (kConstant + vRank)
+            val baseRrfScore = kwContribution + vecContribution
+
+            // DTC 일치 여부 확인 (정확 일치 vs 1자 오타 퍼지 일치)
+            val isExactDtcMatch = item.scoreDetail.dtcBoost >= activeWeights.dtcExactBoost && item.scoreDetail.dtcBoost > 0f
+            val isFuzzyDtcMatch = item.scoreDetail.dtcBoost > 0f && !isExactDtcMatch
+
+            // DTC 일치 시 RRF 최우선권 보장 (Tier 1: 정확 일치 +10.0f, Tier 2: 퍼지 일치 +5.0f)
+            val finalScore = when {
+                isExactDtcMatch -> 10.0f + baseRrfScore
+                isFuzzyDtcMatch -> 5.0f + baseRrfScore
+                else -> baseRrfScore
+            }
+
+            // 신뢰도 백분율 계산 (정확 매칭 98~100%, 퍼지 매칭 90~95%, 일반 RRF 0~89%)
+            val confidence: Float = when {
+                isExactDtcMatch -> (98.0f + (item.scoreDetail.cosSim * 2.0f)).coerceIn(98.0f, 100.0f)
+                isFuzzyDtcMatch -> (90.0f + (item.scoreDetail.cosSim * 5.0f)).coerceIn(90.0f, 95.0f)
+                else -> ((baseRrfScore / maxTheoreticalRrf) * 89.0f).coerceIn(0.0f, 89.0f)
             }
 
             SearchResult(
                 id = item.entry.id,
                 text = item.entry.text,
-                score = rrfScore,
+                score = finalScore,
                 recommendations = item.entry.recommendations,
                 metadata = item.entry.metadata,
                 confidencePercent = confidence
