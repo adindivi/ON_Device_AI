@@ -1,5 +1,6 @@
 package com.example
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -20,6 +21,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        handleIntent(intent)
         setContent {
             MyApplicationTheme {
                 var showSplash by remember { mutableStateOf(true) }
@@ -32,6 +34,25 @@ class MainActivity : ComponentActivity() {
                     CarDiagApp(viewModel = viewModel)
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        val symptom = intent?.getStringExtra("symptom")
+        if (!symptom.isNullOrBlank()) {
+            viewModel.updateSymptomInput(symptom)
+        }
+        val dtc = intent?.getStringExtra("dtc")
+        if (!dtc.isNullOrBlank()) {
+            viewModel.updateDtcInput(dtc)
+        }
+        if (intent?.getBooleanExtra("auto_start", false) == true) {
+            viewModel.startDiagnosis()
         }
     }
 }
