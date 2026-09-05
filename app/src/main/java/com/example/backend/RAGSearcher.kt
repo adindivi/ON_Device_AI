@@ -20,6 +20,14 @@ class RAGSearcher(
     val scorer: RecommendationScorer = RecommendationScorer()
 ) {
 
+    companion object {
+        private const val TAG = "RAGSearcher"
+        const val VECTOR_DIMENSION = 768
+        const val RRF_K_SMOOTHING = 60.0f
+        const val WEIGHT_KEYWORD_TRACK = 1.0f
+        const val WEIGHT_VECTOR_TRACK = 1.0f
+    }
+
     fun updateScoringWeights(weights: ScoringWeights) {
         scorer.currentWeights = weights
     }
@@ -30,8 +38,9 @@ class RAGSearcher(
             return onnxResult
         }
 
+        Log.w(TAG, "⚠️ [ONNX 미가동 폴백 발생] text='${text.take(30)}', isReady=${onnxBertEngine?.isReady}. 가상 해시 임베딩을 임시 생성합니다.")
         val cleanText = text.lowercase().trim()
-        val vectorSize = 768
+        val vectorSize = VECTOR_DIMENSION
         val vec = FloatArray(vectorSize) { 0.001f }
 
         // 100% Dynamic Component Dictionary Extracted from Vector DB at Runtime
@@ -131,9 +140,9 @@ class RAGSearcher(
         val vectorRankMap = vectorRanked.mapIndexed { index, item -> item.entry.id to (index + 1) }.toMap()
 
         // 3. RRF Hyperparameter & Weight Scaling from Active Weights
-        val kConstant = 60.0f
-        val wKeyword = 1.0f
-        val wVector = 1.0f
+        val kConstant = RRF_K_SMOOTHING
+        val wKeyword = WEIGHT_KEYWORD_TRACK
+        val wVector = WEIGHT_VECTOR_TRACK
 
         val maxTheoreticalRrf = (wKeyword / (kConstant + 1.0f)) + (wVector / (kConstant + 1.0f))
 

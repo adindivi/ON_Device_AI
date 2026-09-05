@@ -53,13 +53,12 @@ class OnDeviceBackendEngine(private val context: Context) {
     val documentWatcher: DocumentWatcher
 
     init {
-        // Resolve phone folder "DB" safely by smart auto-detecting folder containing valid rag_vector_database.json
+        // Resolve DB folder safely per GEMINI.md Rule 1 (Scoped Storage - Internal & App-External Only)
         val candidateDirs = listOf(
-            File("/storage/emulated/0/DB"),
-            File(Environment.getExternalStorageDirectory(), "DB"),
+            File(context.filesDir, "DB"),
             context.getExternalFilesDir("DB"),
             context.getExternalFilesDir(null),
-            File(context.filesDir, "DB")
+            context.filesDir
         ).filterNotNull()
 
         // 1. Smart detect directory that actually holds valid rag_vector_database.json (e.g. 6.14MB file)
@@ -69,14 +68,14 @@ class OnDeviceBackendEngine(private val context: Context) {
         }
 
         val resolvedDir = validDbDir ?: try {
-            val emulatedDb = File("/storage/emulated/0/DB")
+            val appInternalDb = File(context.filesDir, "DB")
             val appExternalDb = context.getExternalFilesDir("DB")
             when {
-                emulatedDb.exists() || try { emulatedDb.mkdirs() } catch (e: Exception) { false } -> emulatedDb
-                appExternalDb != null && (appExternalDb.exists() || try { appExternalDb.mkdirs() } catch (e: Exception) { false }) -> appExternalDb
+                appInternalDb.exists() || try { appInternalDb.mkdirs() } catch (_: Exception) { false } -> appInternalDb
+                appExternalDb != null && (appExternalDb.exists() || try { appExternalDb.mkdirs() } catch (_: Exception) { false }) -> appExternalDb
                 else -> File(context.filesDir, "DB")
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             File(context.filesDir, "DB")
         }
 
