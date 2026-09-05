@@ -38,7 +38,7 @@ class RecommendationScorer(
 
     fun calculateScore(
         queryLower: String,
-        queryEmb: List<Float>,
+        queryEmb: List<Float>?,
         dtcPatterns: List<String>,
         queryTerms: List<String>,
         entry: VectorDbEntry,
@@ -47,10 +47,18 @@ class RecommendationScorer(
     ): ScoreDetail {
         val docTextLower = entry.text.lowercase()
         val compLower = entry.metadata.component.lowercase().trim()
-        val docEmb = entry.embedding.ifEmpty { queryEmbeddingProvider(entry.text) }
+        val docEmb = if (queryEmb != null && queryEmb.isNotEmpty()) {
+            entry.embedding.ifEmpty { queryEmbeddingProvider(entry.text) }
+        } else {
+            emptyList()
+        }
 
-        // 1. Cosine Similarity & AI Non-linear Amplification
-        val cosSim = computeCosineSimilarity(queryEmb, docEmb)
+        // 1. Cosine Similarity & AI Non-linear Amplification (null-safe for pure DTC queries)
+        val cosSim = if (queryEmb != null && queryEmb.isNotEmpty()) {
+            computeCosineSimilarity(queryEmb, docEmb)
+        } else {
+            0.0f
+        }
         var aiAmpBoost = 0.0f
         if (cosSim >= 0.50f) {  // 🔧 변경: 0.65 → 0.50 (중간 유사도 문서도 점수 부여)
             aiAmpBoost = ((cosSim - 0.50f) / 0.50f) * weights.aiAmpScale
@@ -103,14 +111,11 @@ class RecommendationScorer(
         }
         dynamicTextBoost = minOf(dynamicTextBoost, weights.textOverlapBoost * 6.0f)
 
-        // 6. DTC Match Boost
+        // 6. DTC Match Boost with Position-Aware Typo Precision (끝자리 오타 우선순위)
         var dtcBoost = 0.0f
         val docDtcs = entry.metadata.dtcs.ifEmpty {
             if (entry.metadata.dtcCode.isNotBlank()) listOf(entry.metadata.dtcCode) else emptyList()
         }
-
-        val typoRatio = if (weights.dtcExactBoost > 0f) (12.0f / 15.0f) else 0.8f
-        val fuzzyBoost = weights.dtcExactBoost * typoRatio
 
         for (docDtc in docDtcs) {
             if (docDtc.isBlank()) continue
@@ -118,18 +123,15 @@ class RecommendationScorer(
 
             for (pattern in dtcPatterns) {
                 if (pattern.length >= 3) {
-                    if (docDtcClean.equals(pattern, ignoreCase = true) || docTextLower.contains(pattern)) {
-                        dtcBoost = weights.dtcExactBoost
-                        break
-                    } else if (isDtcFuzzyMatch(docDtcClean, pattern)) {
-                        dtcBoost = fuzzyBoost
-                        break
+                    val matchScore = calculateDtcMatchScore(docDtcClean, pattern, docTextLower, weights.dtcExactBoost)
+                    if (matchScore > dtcBoost) {
+                        dtcBoost = matchScore
                     }
                 }
             }
 
-            if (queryLower.contains(docDtcClean.lowercase()) || isDtcFuzzyMatch(docDtcClean, queryLower)) {
-                dtcBoost = maxOf(dtcBoost, fuzzyBoost)
+            if (queryLower.contains(docDtcClean.lowercase())) {
+                dtcBoost = maxOf(dtcBoost, weights.dtcExactBoost)
             }
         }
 
@@ -157,28 +159,71 @@ class RecommendationScorer(
         )
     }
 
-    private fun isDtcFuzzyMatch(s1: String, s2: String): Boolean {
-        val str1 = s1.uppercase().trim()
-        val str2 = s2.uppercase().trim()
-        if (str1 == str2) return true
-        if (str1.length < 4 || str2.length < 4) return false
-        if (str1.contains(str2) || str2.contains(str1)) return true
+    /**
+     * 자릿수 가중치를 고려한 정밀 DTC 일치/퍼지 점수 계산
+     * - 완전 일치: exactBoost (15.0)
+     * - 1글자 오타: exactBoost * 0.8 (12.0) + 끝자리 보너스 (최대 +1.5점)
+     *   => 끝자리 오타(C120601 vs C120602)가 중간 오타(C120402 vs C120602)보다 높은 점수 획득
+     */
+    fun calculateDtcMatchScore(
+        docDtc: String,
+        pattern: String,
+        docTextLower: String,
+        exactBoost: Float
+    ): Float {
+        val s1 = docDtc.uppercase().trim()
+        val s2 = pattern.uppercase().trim()
+        if (s1 == s2 || docTextLower.contains(s2.lowercase())) {
+            return exactBoost
+        }
+        if (s1.length < 4 || s2.length < 4) return 0.0f
 
-        if (abs(str1.length - str2.length) <= 1) {
-            val len = minOf(str1.length, str2.length)
-            var diff = 0
-            for (i in 0 until len) {
-                if (str1[i] != str2[i]) {
-                    diff++
-                    if (diff > 1) return false
+        if (s1.length == s2.length) {
+            var diffCount = 0
+            var diffIndex = -1
+            for (i in s1.indices) {
+                if (s1[i] != s2[i]) {
+                    diffCount++
+                    diffIndex = i
                 }
             }
-            return diff <= 1
+            if (diffCount == 1) {
+                val posRatio = diffIndex.toFloat() / (s1.length - 1).toFloat()
+                val posBonus = posRatio * 1.5f
+                return (exactBoost * 0.8f) + posBonus
+            }
+        } else if (abs(s1.length - s2.length) == 1) {
+            if (isDtcLengthDiffMatch(s1, s2)) {
+                return exactBoost * 0.75f
+            }
         }
-        return false
+        if (s1.contains(s2) || s2.contains(s1)) {
+            return exactBoost * 0.7f
+        }
+        return 0.0f
     }
 
-    private fun computeCosineSimilarity(v1: List<Float>, v2: List<Float>): Float {
+    private fun isDtcLengthDiffMatch(s1: String, s2: String): Boolean {
+        val shorter = if (s1.length < s2.length) s1 else s2
+        val longer = if (s1.length < s2.length) s2 else s1
+        var i = 0
+        var j = 0
+        var diff = 0
+        while (i < shorter.length && j < longer.length) {
+            if (shorter[i] == longer[j]) {
+                i++
+                j++
+            } else {
+                diff++
+                if (diff > 1) return false
+                j++
+            }
+        }
+        return true
+    }
+
+    private fun computeCosineSimilarity(v1: List<Float>?, v2: List<Float>?): Float {
+        if (v1 == null || v2 == null) return 0f
         val minSize = min(v1.size, v2.size)
         if (minSize == 0) return 0f
 

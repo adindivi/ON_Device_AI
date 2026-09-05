@@ -172,24 +172,36 @@ class RecommendationScorerTest {
     }
 
     @Test
-    fun `calculateScore - DTC 1글자 오타 또는 하위 코드 Fuzzy 매칭 허용 검증`() {
-        // Given: DB에는 B120813, 사용자는 1자리 오타 B120812 또는 단축 B1208 입력
+    fun `calculateScore - DTC 1글자 오타 또는 하위 코드 Fuzzy 매칭 및 끝자리 오타 가산점 검증`() {
+        // Given: DB에는 B120813, 사용자는 1자리 끝자리 오타 B120812 또는 중간 오타 B120413 입력
         val entry = createTestEntry(dtcCode = "B120813")
-        val typoDtc = "B120812"
+        val trailingTypoDtc = "B120812"
+        val middleTypoDtc = "B120413"
 
-        // When
-        val scoreDetail = scorer.calculateScore(
-            queryLower = typoDtc.lowercase(),
-            queryEmb = emptyList(),
-            dtcPatterns = listOf(typoDtc),
-            queryTerms = listOf(typoDtc),
+        // When: 끝자리 오타
+        val trailingDetail = scorer.calculateScore(
+            queryLower = trailingTypoDtc.lowercase(),
+            queryEmb = null,
+            dtcPatterns = listOf(trailingTypoDtc),
+            queryTerms = listOf(trailingTypoDtc),
             entry = entry,
             queryEmbeddingProvider = { emptyList() }
         )
 
-        // Then: Fuzzy Boost (dtcExactBoost * 0.8 = 12.0점) 가산 확인
-        val expectedFuzzyBoost = defaultWeights.dtcExactBoost * (12.0f / 15.0f)
-        assertEquals(expectedFuzzyBoost, scoreDetail.dtcBoost, 0.001f)
+        // When: 중간 오타
+        val middleDetail = scorer.calculateScore(
+            queryLower = middleTypoDtc.lowercase(),
+            queryEmb = null,
+            dtcPatterns = listOf(middleTypoDtc),
+            queryTerms = listOf(middleTypoDtc),
+            entry = entry,
+            queryEmbeddingProvider = { emptyList() }
+        )
+
+        // Then: 기본 Fuzzy Boost (12.0점 이상) 확인 및 끝자리 오타 점수가 중간 오타 점수보다 높음 확인
+        val baseFuzzyBoost = defaultWeights.dtcExactBoost * (12.0f / 15.0f)
+        assertTrue(trailingDetail.dtcBoost >= baseFuzzyBoost)
+        assertTrue("끝자리 오타 점수(13.5)가 중간 오타 점수(13.0)보다 높아야 합니다", trailingDetail.dtcBoost > middleDetail.dtcBoost)
     }
 
     // ────────────────────────────────────────────────────────────────────────

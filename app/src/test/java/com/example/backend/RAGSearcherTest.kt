@@ -232,6 +232,59 @@ class RAGSearcherTest {
             assertTrue("[$dtc] 1위 신뢰도는 98% 이상이어야 합니다 (실제: ${top.confidencePercent})", top.confidencePercent!! >= 98.0f)
         }
     }
+
+    @Test
+    fun `search - C120602 오타 입력 시 중간 오타 C120402를 제치고 끝자리 오타 C120601이 1위로 우선 추천됨`() {
+        // Given: C120601 (끝자리 1자 오타)과 C120402 (중간자리 1자 오타) 문서 준비
+        val trailingTypoDoc = createEntry(
+            id = "DOC-C120601",
+            text = "[증상] 브레이크 경고등 [고장 내용] 뒤좌측 휠속도센서 단선",
+            dtcCode = "C120601",
+            component = "뒤좌측 휠속도센서"
+        )
+        val middleTypoDoc = createEntry(
+            id = "DOC-C120402",
+            text = "[증상] 오른쪽 앞바퀴 속도 이상 [고장 내용] 앞우측 휠속도센서 성능 이상",
+            dtcCode = "C120402",
+            component = "앞우측 휠속도센서"
+        )
+        vectorDb.addDocumentsBatch(listOf(middleTypoDoc, trailingTypoDoc))
+
+        // When: c120602 입력
+        val results = ragSearcher.search("c120602", topK = 2)
+
+        // Then: 끝자리 오타 가산점으로 인해 DOC-C120601이 1위여야 함
+        assertTrue(results.isNotEmpty())
+        assertEquals("DOC-C120601", results[0].id)
+        assertEquals("DOC-C120402", results[1].id)
+        assertTrue("C120601의 점수가 C120402보다 높아야 합니다", results[0].score > results[1].score)
+        assertTrue("퍼지 일치 신뢰도는 90% 이상이어야 합니다", results[0].confidencePercent!! >= 90.0f)
+    }
+
+    @Test
+    fun `search - 순수 DTC 단독 질의 시 Vector Track은 바이패스되고 고장코드 순수 순위로 정렬됨`() {
+        // Given: DTC 일치 문서와 높은 코사인 유사도를 가진 무관 문서
+        val dtcDoc = createEntry(
+            id = "DOC-DTC",
+            text = "휠속도센서 배선 단선 수리 가이드",
+            dtcCode = "C120601",
+            component = "휠속도센서"
+        )
+        val semanticDoc = createEntry(
+            id = "DOC-SEMANTIC",
+            text = "기타 다른 부품 점검 안내",
+            dtcCode = "B124111",
+            component = "증발기 센서"
+        )
+        vectorDb.addDocumentsBatch(listOf(dtcDoc, semanticDoc))
+
+        // When: 순수 DTC "C120601" 단독 질의
+        val results = ragSearcher.search("C120601", topK = 2)
+
+        // Then: DOC-DTC가 1위이며 Tier 1 점수(10.0 이상) 획득
+        assertEquals("DOC-DTC", results[0].id)
+        assertTrue(results[0].score >= 10.0f)
+    }
 }
 
 

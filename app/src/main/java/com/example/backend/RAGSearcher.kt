@@ -92,7 +92,6 @@ class RAGSearcher(
 
         val queryLower = query.lowercase().trim()
             .replace("피워", "파워")
-        val queryEmb = getEmbedding(queryLower, isQuery = true)
 
         // Find DTC code patterns from query (e.g. P0A0A12, P00B101, C120601, P0301)
         val dtcPatterns = mutableListOf<String>()
@@ -106,6 +105,24 @@ class RAGSearcher(
             if (matched !in dtcPatterns) {
                 dtcPatterns.add(matched)
             }
+        }
+
+        // 제안 3: 고장코드 + 증상 문장 복합 입력 시, DTC 코드를 뺀 순수 자연어 증상 텍스트만 추출
+        var cleanSemanticText = queryLower
+        for (pattern in dtcPatterns) {
+            cleanSemanticText = cleanSemanticText.replace(pattern, " ")
+        }
+        cleanSemanticText = cleanSemanticText.replace(Regex("[\\s,.\\[\\]()_\\-]+"), " ").trim()
+
+        // 제안 1: 순수 DTC 단독 질의 판별 (증상 문장 없이 고장코드만 입력된 경우)
+        val isPureDtcQuery = dtcPatterns.isNotEmpty() && cleanSemanticText.isBlank()
+
+        // DTC 단독 질의 시에는 의미 없는 영숫자 토큰 임베딩을 생략(null)하여 AI 문맥 왜곡 방지
+        // 복합 질의 시에는 고장코드가 제거된 순수 자연어 증상 문장만 임베딩하여 AI 이해도 극대화
+        val queryEmb: List<Float>? = if (isPureDtcQuery) {
+            null
+        } else {
+            getEmbedding(cleanSemanticText.ifBlank { queryLower }, isQuery = true)
         }
 
         // Extract query terms for term overlap matching
@@ -158,7 +175,13 @@ class RAGSearcher(
             } else {
                 0.0f
             }
-            val vecContribution = wVector / (kConstant + vRank)
+            // 제안 1: 순수 DTC 단독 질의 시에는 Vector Track 점수를 0.0으로 바이패스하여 
+            // AI 서브워드 무작위 유사도로 인한 랭킹 왜곡 원천 차단
+            val vecContribution = if (isPureDtcQuery) {
+                0.0f
+            } else {
+                wVector / (kConstant + vRank)
+            }
             val baseRrfScore = kwContribution + vecContribution
 
             // DTC 일치 여부 확인 (정확 일치 vs 1자 오타 퍼지 일치)
@@ -175,7 +198,16 @@ class RAGSearcher(
             // 신뢰도 백분율 계산 (정확 매칭 98~100%, 퍼지 매칭 90~95%, 일반 RRF 0~89%)
             val confidence: Float = when {
                 isExactDtcMatch -> (98.0f + (item.scoreDetail.cosSim * 2.0f)).coerceIn(98.0f, 100.0f)
-                isFuzzyDtcMatch -> (90.0f + (item.scoreDetail.cosSim * 5.0f)).coerceIn(90.0f, 95.0f)
+                isFuzzyDtcMatch -> {
+                    // 제안 2: 끝자리 오타 보너스(dtcBoost)가 높을수록 90~95% 상위 신뢰도 차등 부여
+                    val boostSpan = activeWeights.dtcExactBoost * 0.25f
+                    val boostRatio = if (boostSpan > 0f) {
+                        ((item.scoreDetail.dtcBoost - (activeWeights.dtcExactBoost * 0.75f)) / boostSpan).coerceIn(0.0f, 1.0f)
+                    } else {
+                        0.5f
+                    }
+                    (90.0f + (boostRatio * 5.0f)).coerceIn(90.0f, 95.0f)
+                }
                 else -> ((baseRrfScore / maxTheoreticalRrf) * 89.0f).coerceIn(0.0f, 89.0f)
             }
 
