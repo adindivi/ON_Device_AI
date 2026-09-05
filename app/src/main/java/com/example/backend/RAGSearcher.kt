@@ -102,20 +102,14 @@ class RAGSearcher(
         val queryTerms = queryLower.split(Regex("[\\s,.\\[\\]()]+")).filter { it.length >= 2 }
 
         val activeWeights = weights ?: scorer.currentWeights
-        val results = mutableListOf<SearchResult>()
 
-        // ONNX 로딩 여부 확인 → false면 신뢰도 칩 숨김(null)
-        val isOnnxActive = onnxBertEngine?.isReady == true
+        data class IntermediateEntry(
+            val entry: VectorDbEntry,
+            val scoreDetail: RecommendationScorer.ScoreDetail
+        )
 
-        // DTC를 제외한 기본 최대 점수 (항상 유효한 분모)
-        val baseMaxScore = activeWeights.aiAmpScale +
-                           1.0f +
-                           activeWeights.compMatchBoost +
-                           (activeWeights.textOverlapBoost * 6.0f) +
-                           (activeWeights.upvoteBonusScale * 6.6f)
-
-        for (entry in entries) {
-            val scoreDetail = scorer.calculateScore(
+        val intermediateList = entries.map { entry ->
+            val detail = scorer.calculateScore(
                 queryLower = queryLower,
                 queryEmb = queryEmb,
                 dtcPatterns = dtcPatterns,
@@ -124,34 +118,51 @@ class RAGSearcher(
                 queryEmbeddingProvider = { getEmbedding(it) },
                 weights = activeWeights
             )
+            IntermediateEntry(entry, detail)
+        }
 
-            // 동적 maxScore: DTC 정확 매칭 시 슈퍼 maxScore 연산
-            val dynamicMaxScore = if (scoreDetail.dtcBoost >= activeWeights.dtcExactBoost && scoreDetail.dtcBoost > 0f) {
-                100.0f + activeWeights.dtcExactBoost + baseMaxScore
-            } else if (scoreDetail.dtcBoost > 0f) {
-                baseMaxScore + activeWeights.dtcExactBoost
+        // 1. Keyword Track Ranking (1-indexed)
+        val keywordRanked = intermediateList.sortedByDescending { it.scoreDetail.keywordTrackScore + it.scoreDetail.bonusScore }
+        val keywordRankMap = keywordRanked.mapIndexed { index, item -> item.entry.id to (index + 1) }.toMap()
+
+        // 2. Vector Track Ranking (1-indexed)
+        val vectorRanked = intermediateList.sortedByDescending { it.scoreDetail.vectorTrackScore + it.scoreDetail.bonusScore }
+        val vectorRankMap = vectorRanked.mapIndexed { index, item -> item.entry.id to (index + 1) }.toMap()
+
+        // 3. RRF Hyperparameter & Weight Scaling from Active Weights
+        val kConstant = 60.0f
+        val wKeyword = 1.0f
+        val wVector = 1.0f
+
+        val maxTheoreticalRrf = (wKeyword / (kConstant + 1.0f)) + (wVector / (kConstant + 1.0f))
+
+        val rrfResults = intermediateList.map { item ->
+            val kRank = keywordRankMap[item.entry.id] ?: intermediateList.size
+            val vRank = vectorRankMap[item.entry.id] ?: intermediateList.size
+
+            val rrfScore = (wKeyword / (kConstant + kRank)) + (wVector / (kConstant + vRank))
+
+            // Check if exact DTC match occurred
+            val isExactDtcMatch = item.scoreDetail.dtcBoost >= activeWeights.dtcExactBoost && item.scoreDetail.dtcBoost > 0f
+
+            // Calculate confidence percentage smoothly scaled to 0~100%
+            val confidence: Float = if (isExactDtcMatch) {
+                (98.0f + (item.scoreDetail.cosSim * 2.0f)).coerceIn(98.0f, 100.0f)
             } else {
-                baseMaxScore
+                ((rrfScore / maxTheoreticalRrf) * 100.0f).coerceIn(0.0f, 100.0f)
             }
 
-            // 항상 일치도 % 계산 (DTC 및 키워드/유사도 종합 가중치 점수 기반 100% 표출)
-            val confidence: Float = if (dynamicMaxScore > 0f) {
-                (scoreDetail.finalScore / dynamicMaxScore * 100f).coerceIn(0f, 100f)
-            } else 0.0f
-
-            results.add(
-                SearchResult(
-                    id = entry.id,
-                    text = entry.text,
-                    score = scoreDetail.finalScore,
-                    recommendations = entry.recommendations,
-                    metadata = entry.metadata,
-                    confidencePercent = confidence
-                )
+            SearchResult(
+                id = item.entry.id,
+                text = item.entry.text,
+                score = rrfScore,
+                recommendations = item.entry.recommendations,
+                metadata = item.entry.metadata,
+                confidencePercent = confidence
             )
         }
 
-        return results.sortedByDescending { it.score }.take(topK)
+        return rrfResults.sortedByDescending { it.score }.take(topK)
 
     }
 }

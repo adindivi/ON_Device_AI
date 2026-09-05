@@ -191,10 +191,13 @@ fun CarDiagApp(viewModel: CarDiagViewModel) {
                 // 데이터 관리: 기록 + 설정을 모두 포함 (ContributionSettingsScreen 사용)
                 AppTab.DATA_MANAGEMENT -> {
                     val isQwenLoading by viewModel.isQwenLoading.collectAsStateWithLifecycle()
+                    val isQwenAnswerEnabled by viewModel.isQwenAnswerEnabled.collectAsStateWithLifecycle()
                     ContributionSettingsScreen(
                         userDocuments = userManualDocuments,
                         backendStatus = backendDbStatus,
                         isQwenLoading = isQwenLoading,
+                        isQwenAnswerEnabled = isQwenAnswerEnabled,
+                        onToggleQwenAnswer = { viewModel.toggleQwenAnswer(it) },
                         onOpenAddRemedy = { viewModel.setAddRemedyModalVisible(true) },
                         onEditDocument = { viewModel.setEditingDocument(it) },
                         onDeleteDocument = { viewModel.deleteRemedy(it) },

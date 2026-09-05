@@ -31,7 +31,9 @@ class RecommendationScorer(
         val dynamicTextBoost: Float,
         val compPenalty: Float,
         val bonusScore: Float,
-        val finalScore: Float
+        val finalScore: Float,
+        val keywordTrackScore: Float = 0f,
+        val vectorTrackScore: Float = 0f
     )
 
     fun calculateScore(
@@ -131,6 +133,9 @@ class RecommendationScorer(
             }
         }
 
+        val keywordTrackScore = dtcBoost + dynamicCompBoost + dynamicTextBoost + compPenalty
+        val vectorTrackScore = cosSim + aiAmpBoost
+
         // DTC 정확 일치 시 무조건 독점 1위 100점 프리미엄 부여
         val finalScore = if (dtcBoost >= weights.dtcExactBoost && dtcBoost > 0f) {
             100.0f + dtcBoost + cosSim + bonusScore + dynamicCompBoost + dynamicTextBoost
@@ -146,7 +151,9 @@ class RecommendationScorer(
             dynamicTextBoost = dynamicTextBoost,
             compPenalty = compPenalty,
             bonusScore = bonusScore,
-            finalScore = finalScore
+            finalScore = finalScore,
+            keywordTrackScore = keywordTrackScore,
+            vectorTrackScore = vectorTrackScore
         )
     }
 

@@ -116,6 +116,20 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    private val appPrefs = application.getSharedPreferences("qwen_prefs", android.content.Context.MODE_PRIVATE)
+    private val _isQwenAnswerEnabled = MutableStateFlow(appPrefs.getBoolean("qwen_answer_enabled", true))
+    val isQwenAnswerEnabled: StateFlow<Boolean> = _isQwenAnswerEnabled.asStateFlow()
+
+    fun toggleQwenAnswer(enabled: Boolean) {
+        _isQwenAnswerEnabled.value = enabled
+        appPrefs.edit().putBoolean("qwen_answer_enabled", enabled).apply()
+        if (enabled) {
+            showToast("🤖 Qwen AI 상세 답변 생성이 활성화되었습니다.")
+        } else {
+            showToast("⚡ 초고속 진단 모드 (Qwen 답변 생략)가 활성화되었습니다.")
+        }
+    }
+
     // Vehicle State
     private val _vehicle = MutableStateFlow(VehicleInfo())
     val vehicle: StateFlow<VehicleInfo> = _vehicle.asStateFlow()
@@ -286,33 +300,40 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
             _isDiagnosing.value = true
             _activeResult.value = null
 
-            // Step 1: 계획 수립 (Plan)
-            _diagnosisStep.value = 1
-            delay(500)
+            val isQwenOn = _isQwenAnswerEnabled.value
 
-            // Step 2: 벡터 DB RAG 검색 (rag_vector_database.json)
-            _diagnosisStep.value = 2
-            delay(600)
+            if (isQwenOn) {
+                // Step 1: 계획 수립 (Plan)
+                _diagnosisStep.value = 1
+                delay(400)
 
-            // Step 3: 온디바이스 Qwen-2.5 LLM 원인 분석
-            _diagnosisStep.value = 3
-            delay(800)
+                // Step 2: 벡터 DB RAG 검색 (rag_vector_database.json)
+                _diagnosisStep.value = 2
+                delay(500)
 
-            // Step 4: 종합 진단 보고서 작성 (스트리밍 시작)
-            _diagnosisStep.value = 4
-            delay(400)
+                // Step 3: 온디바이스 Qwen-2.5 LLM 원인 분석
+                _diagnosisStep.value = 3
+                delay(600)
+
+                // Step 4: 종합 진단 보고서 작성 (스트리밍 시작)
+                _diagnosisStep.value = 4
+                delay(300)
+            } else {
+                // 초고속 모드: 딜레이 없이 즉시 RAG 검색
+                _diagnosisStep.value = 1
+                delay(100)
+                _diagnosisStep.value = 2
+                delay(150)
+            }
             
             _isGuideExpanded.value = true // 스트리밍 결과를 바로 볼 수 있게 열어둠
 
             withContext(Dispatchers.IO) {
-                diagnoseUseCase.executeStream(queryDtc, querySymptom).collect { diagnosisResult ->
+                diagnoseUseCase.executeStream(queryDtc, querySymptom, isQwenEnabled = isQwenOn).collect { diagnosisResult ->
                     withContext(Dispatchers.Main) {
                         val newHistory = diagnosisResult.history
                         _activeResultMatches.value = diagnosisResult.matches
                         _activeResult.value = newHistory
-                        
-                        // DB 저장은 마지막에 해야 하지만 스트리밍 중 계속 덮어쓸 순 없으니 나중에 개선.
-                        // 현재는 그냥 임시로 UI만 업데이트.
                     }
                 }
             }
@@ -322,7 +343,11 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
 
             _isDiagnosing.value = false
             refreshBackendStatus()
-            showToast("✅ 스마트 정비 진단서가 작성되었습니다.")
+            if (isQwenOn) {
+                showToast("✅ 스마트 정비 진단서가 작성되었습니다.")
+            } else {
+                showToast("⚡ 초고속 정비 진단서가 완성되었습니다. (Qwen OFF)")
+            }
         }
     }
 

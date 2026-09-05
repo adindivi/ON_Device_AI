@@ -78,6 +78,8 @@ fun ContributionSettingsScreen(
     onDeleteDocument: (Long) -> Unit,
     onRefreshStatus: (() -> Unit)? = null,
     onQwenModelSelected: ((android.net.Uri) -> Unit)? = null,
+    isQwenAnswerEnabled: Boolean = true,
+    onToggleQwenAnswer: ((Boolean) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -312,6 +314,43 @@ fun ContributionSettingsScreen(
                                         color = Color(0xFFE2E8F0)
                                     )
                                 }
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+                            androidx.compose.material3.HorizontalDivider(
+                                thickness = 0.5.dp,
+                                color = Color(0xFF334155)
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "🤖 큐웬 AI 상세 답변 생성",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                    Text(
+                                        text = if (isQwenAnswerEnabled) "ON: 정비 카드 + AI 종합 진단서 작성" else "OFF: 0.05초 초고속 모드 (정비 카드만 표출)",
+                                        fontSize = 10.sp,
+                                        color = if (isQwenAnswerEnabled) Color(0xFF38BDF8) else Color(0xFF94A3B8)
+                                    )
+                                }
+                                androidx.compose.material3.Switch(
+                                    checked = isQwenAnswerEnabled,
+                                    onCheckedChange = { onToggleQwenAnswer?.invoke(it) },
+                                    colors = androidx.compose.material3.SwitchDefaults.colors(
+                                        checkedThumbColor = Color.White,
+                                        checkedTrackColor = Color(0xFF0284C7),
+                                        uncheckedThumbColor = Color(0xFFCBD5E1),
+                                        uncheckedTrackColor = Color(0xFF334155)
+                                    )
+                                )
                             }
                         }
                     }
