@@ -175,4 +175,63 @@ class RAGSearcherTest {
         assertTrue("DTC 매칭이 없으므로 점수는 일반 RRF 범위(< 1.0f)여야 합니다 (실제: ${results[0].score})", results[0].score < 1.0f)
         assertTrue("일반 자연어 검색 신뢰도는 89% 이하여야 합니다 (실제: ${results[0].confidencePercent})", results[0].confidencePercent!! <= 89.0f)
     }
+
+    @Test
+    fun `search - 실제 DB 대표 고장코드(C120601, B124111, P0A0A12, U006488) 1위 우선권 검증`() {
+        val entry1 = createEntry(
+            id = "DOC-C120601",
+            text = "[증상] 브레이크 경고등이 켜졌어요, 계기판에 ABS 불이 들어와요 [고장 내용] 뒤좌측 휠속도 센서 단선/단락",
+            dtcCode = "C120601",
+            component = "휠속도센서",
+            recommendations = 2
+        )
+        val entry2 = createEntry(
+            id = "DOC-B124111",
+            text = "[증상] 에어컨 냉방이 잘 안 돼요 [고장 내용] 센서 단락(신호값 낮음)",
+            dtcCode = "B124111",
+            component = "증발기 센서",
+            recommendations = 5
+        )
+        val entry3 = createEntry(
+            id = "DOC-P0A0A12",
+            text = "[증상] 고전압 배터리 연결이 안 돼서 차량이 시동이 안 걸려요 [고장 내용] 고전압 시스템 인터록 회로 이상",
+            dtcCode = "P0A0A12",
+            component = "인터록 회로",
+            recommendations = 1
+        )
+        val entry4 = createEntry(
+            id = "DOC-U006488",
+            text = "[증상] 차량 네트워크와 테일게이트 통신이 끊겼어요 [고장 내용] 버스 차단",
+            dtcCode = "U006488",
+            component = "차량 통신 E",
+            recommendations = 0
+        )
+        val popularIrrelevant = createEntry(
+            id = "DOC-OTHER",
+            text = "기타 일반 정비 사례",
+            dtcCode = "B14A023",
+            component = "슬라이딩도어",
+            recommendations = 20
+        )
+
+        vectorDb.addDocumentsBatch(listOf(entry1, entry2, entry3, entry4, popularIrrelevant))
+
+        val testCases = listOf(
+            "C120601" to "DOC-C120601",
+            "B124111" to "DOC-B124111",
+            "P0A0A12" to "DOC-P0A0A12",
+            "U006488" to "DOC-U006488"
+        )
+
+        for ((dtc, expectedId) in testCases) {
+            val results = ragSearcher.search(dtc, topK = 3)
+            assertTrue("[$dtc] 검색 결과가 비어있지 않아야 합니다", results.isNotEmpty())
+            val top = results[0]
+            assertEquals("[$dtc] 1위 결과는 $expectedId 이어야 합니다", expectedId, top.id)
+            assertTrue("[$dtc] 1위 점수는 Tier 1 (10.0 이상)이어야 합니다 (실제: ${top.score})", top.score >= 10.0f)
+            assertTrue("[$dtc] 1위 신뢰도는 98% 이상이어야 합니다 (실제: ${top.confidencePercent})", top.confidencePercent!! >= 98.0f)
+        }
+    }
 }
+
+
