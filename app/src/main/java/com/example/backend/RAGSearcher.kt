@@ -48,8 +48,8 @@ class RAGSearcher(
         const val WEIGHT_KEYWORD_TRACK = 1.0f
         const val WEIGHT_VECTOR_TRACK = 1.0f
 
-        // 실제 벡터 DB 문서가 있을 때 배제할 기본 샘플 문서 ID 집합
-        private val SAMPLE_DOC_IDS = setOf("DOC-DEFAULT-1", "DOC-DEFAULT-2", "DOC-DEFAULT-3", "TSB-03-15", "CASE-11-02")
+        // 실제 벡터 DB 문서가 있을 때 배제할 기본 샘플 문서 ID 집합 (SSOT)
+        val SAMPLE_DOC_IDS = setOf("DOC-DEFAULT-1", "DOC-DEFAULT-2", "DOC-DEFAULT-3", "TSB-03-15", "CASE-11-02", "DIAG-C1206")
     }
 
     /**

@@ -9,6 +9,8 @@ import com.example.data.local.AppDatabase
 import com.example.data.local.DiagnosticHistory
 import com.example.data.local.RagDocument
 import com.example.data.repository.CarDiagRepository
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -67,7 +69,7 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
             initialValue = emptyList()
         )
 
-        val sampleCodes = setOf("DOC-DEFAULT-1", "DOC-DEFAULT-2", "DOC-DEFAULT-3", "TSB-03-15", "CASE-11-02", "DIAG-C1206")
+        val sampleCodes = com.example.backend.RAGSearcher.SAMPLE_DOC_IDS
 
         ragDocuments = repository.allRagDocuments.map { list ->
             val hasRealDocs = list.any { it.docCode !in sampleCodes }
@@ -109,15 +111,15 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
 
     fun onQwenModelSelected(uri: android.net.Uri) {
         _isQwenLoading.value = true
-        showToast("⏳ 안전한 내부 공간으로 1.8GB 모델 복사 중입니다 (약 15초 소요)...")
+        showToast("AI 모델 복사 중...")
         
         backendEngine.loadQwenModelFromUri(uri) { success ->
             viewModelScope.launch(Dispatchers.Main) {
                 _isQwenLoading.value = false
                 if (success) {
-                    showToast("✅ 복사 및 큐웬 모델 GGUF 파일 연결 완료!")
+                    showToast("AI 모델 준비 완료")
                 } else {
-                    showToast("❌ 모델 복사 또는 연결 실패")
+                    showToast("AI 모델 연결 실패")
                 }
                 refreshBackendStatus()
             }
@@ -132,9 +134,9 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
         _isQwenAnswerEnabled.value = enabled
         appPrefs.edit().putBoolean("qwen_answer_enabled", enabled).apply()
         if (enabled) {
-            showToast("🤖 Qwen AI 상세 답변 생성이 활성화되었습니다.")
+            showToast("AI 상세 답변 켜짐")
         } else {
-            showToast("⚡ 초고속 진단 모드 (Qwen 답변 생략)가 활성화되었습니다.")
+            showToast("초고속 모드 켜짐")
         }
     }
 
@@ -211,10 +213,10 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
         return if (inputPin == "1234") {
             _showPasswordModal.value = false
             _showWeightSettingsModal.value = true
-            showToast("🔑 관리자 인증이 완료되었습니다.")
+            showToast("관리자 인증 완료")
             true
         } else {
-            showToast("🚫 비밀번호를 다시 확인해주세요.")
+            showToast("비밀번호를 다시 확인해주세요.")
             false
         }
     }
@@ -227,14 +229,14 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
         _scoringWeights.value = newWeights
         backendEngine.updateScoringWeights(newWeights)
         _showWeightSettingsModal.value = false
-        showToast("⚙️ 분석 가중치 설정이 적용되었습니다.")
+        showToast("가중치 설정 적용됨")
     }
 
     fun resetScoringWeights() {
         val defaultWeights = com.example.backend.ScoringWeights()
         _scoringWeights.value = defaultWeights
         backendEngine.updateScoringWeights(defaultWeights)
-        showToast("↺ 기본 가중치로 설정되었습니다.")
+        showToast("가중치 기본값 복원")
     }
 
     // Modal/Dialog Control States
@@ -311,6 +313,7 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private val diagnoseUseCase = DiagnoseSymptomUseCase(backendEngine)
+    private var diagnosisJob: Job? = null
 
     // Start On-Device AI Diagnosis Engine
     fun startDiagnosis() {
@@ -322,7 +325,14 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
             return
         }
 
-        viewModelScope.launch {
+        // [동시성 방어 및 연타 방지] 이미 진단 중인 경우 중복 클릭 진입 차단
+        if (_isDiagnosing.value) {
+            android.util.Log.w("CarDiagViewModel", "⚠️ [진단 중복 방지] 이미 진단 프로세스가 실행 중입니다. 중복 요청을 무시합니다.")
+            return
+        }
+
+        diagnosisJob?.cancel()
+        diagnosisJob = viewModelScope.launch {
             _isDiagnosing.value = true
             _activeResult.value = null
 
@@ -380,16 +390,17 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
                 // Save to DB (최종 완료된 결과만 저장)
                 _activeResult.value?.let { repository.insertHistory(it) }
 
-                _isDiagnosing.value = false
                 refreshBackendStatus()
                 if (isQwenOn) {
-                    showToast("✅ 스마트 정비 진단서가 작성되었습니다.")
+                    showToast("스마트 정비 진단서가 작성되었습니다.")
                 } else {
-                    showToast("⚡ 온디바이스 RAG 정비 진단서가 완성되었습니다. (Qwen OFF)")
+                    showToast("초고속 진단 완료")
                 }
+            } catch (e: CancellationException) {
+                android.util.Log.d("CarDiagViewModel", "ℹ️ 진단 코루틴 작업이 취소되었습니다.")
+                throw e
             } catch (e: Throwable) {
                 android.util.Log.e("CarDiagViewModel", "❌ [진단 실패] queryDtc='$queryDtc', symptom='$querySymptom', Qwen=$isQwenOn, 예외: ${e.message}", e)
-                _isDiagnosing.value = false
                 _diagnosisStep.value = 0
 
                 val friendlyMessage = when {
@@ -416,6 +427,8 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
                     technicalDetail = techDetail,
                     canRetry = true
                 )
+            } finally {
+                _isDiagnosing.value = false
             }
         }
     }
@@ -435,7 +448,7 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
                 }
             }
             refreshBackendStatus()
-            showToast("💙 유용한 정보로 추천되었습니다.")
+            showToast("지침서 추천 완료")
         }
     }
 
@@ -476,9 +489,9 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
                 repository.insertRagDocument(newDoc)
                 _showAddRemedyModal.value = false
                 refreshBackendStatus()
-                showToast("📁 정비 노하우가 오프라인 DB에 저장되었습니다.")
+                showToast("정비 노하우 저장 완료")
             } else {
-                showToast("⚠️ ${response.message}")
+                showToast(response.message.replace("⚠️", "").trim().ifBlank { "저장 실패" })
             }
         }
     }
@@ -495,7 +508,7 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
             )
             _editingDocument.value = null
             refreshBackendStatus()
-            showToast("✏️ 지식 정보가 성공적으로 수정되었습니다.")
+            showToast("지식 정보 수정 완료")
         }
     }
 
@@ -508,7 +521,7 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
             repository.deleteRagDocument(id)
             _editingDocument.value = null
             refreshBackendStatus()
-            showToast("🗑️ 선택한 지식이 삭제되었습니다.")
+            showToast("지식 정보 삭제 완료")
         }
     }
 
@@ -517,6 +530,6 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
         val extractedDtc = ocrResult.dtcCodes.firstOrNull() ?: code
         _dtcInput.value = extractedDtc
         _showScannerModal.value = false
-        showToast("📷 OCR 판독 완료: DTC $extractedDtc 코드 입력됨")
+        showToast("DTC $extractedDtc 입력됨")
     }
 }

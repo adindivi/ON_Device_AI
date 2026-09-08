@@ -34,6 +34,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -76,30 +77,36 @@ fun TopFloatingToast(
             enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
             exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut()
         ) {
+            val isError = currentMsg.contains("실패") || currentMsg.contains("불일치") || currentMsg.contains("오류") || currentMsg.contains("필요") || currentMsg.contains("다시 확인") || currentMsg.contains("⚠️") || currentMsg.contains("올바르지 않습니다")
+            // 이모지 프리픽스 제거 (컴팩트 벡터 아이콘과 중복 방지)
+            val displayMsg = currentMsg.replace(Regex("^[\\p{So}\\p{Sk}\\p{Sm}\\p{Sc}\\p{Cs}\\p{Cn}\\u2000-\\u3300\\uD83C-\\uDFFF]+\\s*"), "").trim()
+
             Surface(
                 modifier = Modifier
-                    .shadow(6.dp, shape = RoundedCornerShape(50.dp))
-                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(50.dp)),
+                    .shadow(4.dp, shape = RoundedCornerShape(50.dp))
+                    .border(0.75.dp, Color(0xFFE2E8F0), RoundedCornerShape(50.dp)),
                 shape = RoundedCornerShape(50.dp),
                 color = Color.White
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val isSuccess = !currentMsg.contains("실패") && !currentMsg.contains("올바르지 않습니다") && !currentMsg.contains("⚠️")
                     Icon(
-                        imageVector = if (isSuccess) Icons.Default.CheckCircle else Icons.Default.Info,
+                        imageVector = if (!isError) Icons.Default.CheckCircle else Icons.Default.Info,
                         contentDescription = null,
-                        tint = if (isSuccess) Color(0xFF004AC6) else Color(0xFFDC2626),
-                        modifier = Modifier.size(18.dp)
+                        tint = if (!isError) Color(0xFF007AFF) else Color(0xFFDC2626),
+                        modifier = Modifier.size(15.dp)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = currentMsg,
+                        text = displayMsg,
                         fontSize = 12.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1E293B)
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = (-0.3).sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = Color(0xFF1D1D1F)
                     )
                 }
             }

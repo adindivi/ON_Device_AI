@@ -189,7 +189,7 @@ fun ContributionSettingsScreen(
                                         .clickable {
                                              refreshKey++
                                              onRefreshStatus?.invoke()
-                                             android.widget.Toast.makeText(context, "🔄 오프라인 진단 데이터가 최신 상태입니다.", android.widget.Toast.LENGTH_SHORT).show()
+                                             android.widget.Toast.makeText(context, "진단 데이터 최신 상태", android.widget.Toast.LENGTH_SHORT).show()
                                          }
                                          .padding(horizontal = 7.dp, vertical = 3.dp)
                                  ) {

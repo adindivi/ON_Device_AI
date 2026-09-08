@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -112,18 +113,13 @@ fun ScannerOcrDialog(
                 detectedCodes.clear()
                 if (ocrResult.dtcCodes.isNotEmpty()) {
                     detectedCodes.addAll(ocrResult.dtcCodes)
+                    Toast.makeText(context, "OCR 판독 완료: ${detectedCodes.size}개 코드", Toast.LENGTH_SHORT).show()
                 } else {
-                    // 비트맵 해시 픽셀에 기초한 안전 Fallback 코드
-                    val width = bitmap.width
-                    val height = bitmap.height
-                    val hashVal = Math.abs((width * 31 + height * 17 + bitmap.getPixel(width / 2, height / 2)).hashCode())
-                    val samplePool = listOf("P05B192", "C120601", "P0301", "B24BC96", "U0100", "P0530")
-                    val dynamicCode = samplePool[hashVal % samplePool.size]
-                    detectedCodes.add(dynamicCode)
+                    android.util.Log.w("ScannerOcrDialog", "ML Kit OCR: No DTC codes detected in image ($imageSourceTitle)")
+                    Toast.makeText(context, "고장 코드 미감지", Toast.LENGTH_SHORT).show()
                 }
 
                 isScanning = false
-                Toast.makeText(context, "$sourceName OCR 분석 완료: ${detectedCodes.size}개 코드 추출", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -144,11 +140,11 @@ fun ScannerOcrDialog(
         if (isGranted) {
             cameraLauncher.launch(null)
         } else {
-            Toast.makeText(context, "카메라 촬영을 위해 권한 승인이 필요합니다.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "카메라 권한 필요", Toast.LENGTH_SHORT).show()
         }
     }
 
-    // 갤러리 이미지 EXIF 회전각 자동 보정 및 디코딩 함수
+    // 갤러리 이미지 EXIF 회전각 자동 보정 및 OOM 방지 다운샘플링 디코딩 함수
     fun decodeGalleryUriWithExifCorrection(uri: Uri): Bitmap? {
         return try {
             var rotationDegrees = 0
@@ -163,21 +159,59 @@ fun ScannerOcrDialog(
                 }
             }
 
-            var bitmap: Bitmap? = null
+            // 1단계: OOM 방지를 위해 비트맵 메모리 할당 없이 원본 해상도(Bounds)만 먼저 측정
+            val boundsOptions = BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
             context.contentResolver.openInputStream(uri)?.use { stream ->
-                val options = BitmapFactory.Options().apply {
-                    inPreferredConfig = Bitmap.Config.ARGB_8888
-                }
-                bitmap = BitmapFactory.decodeStream(stream, null, options)
+                BitmapFactory.decodeStream(stream, null, boundsOptions)
             }
 
-            if (bitmap != null && rotationDegrees != 0) {
-                val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
-                Bitmap.createBitmap(bitmap!!, 0, 0, bitmap!!.width, bitmap!!.height, matrix, true)
-            } else {
-                bitmap
+            val origWidth = boundsOptions.outWidth
+            val origHeight = boundsOptions.outHeight
+            if (origWidth <= 0 || origHeight <= 0) {
+                android.util.Log.w("ScannerOcrDialog", "⚠️ [갤러리] 유효하지 않은 이미지 크기: ${origWidth}x${origHeight}")
+                return null
             }
-        } catch (e: Exception) {
+
+            // 2단계: Google ML Kit OCR에 최적인 최대 1280px 해상도로 inSampleSize(2의 거듭제곱) 계산
+            val maxDimension = 1280
+            var sampleSize = 1
+            while ((origWidth / sampleSize) > maxDimension || (origHeight / sampleSize) > maxDimension) {
+                sampleSize *= 2
+            }
+
+            // 3단계: 다운샘플링 적용하여 안전하게 디코딩
+            val decodeOptions = BitmapFactory.Options().apply {
+                inSampleSize = sampleSize
+                inPreferredConfig = Bitmap.Config.ARGB_8888
+            }
+
+            var loadedBitmap: Bitmap? = null
+            context.contentResolver.openInputStream(uri)?.use { stream ->
+                loadedBitmap = BitmapFactory.decodeStream(stream, null, decodeOptions)
+            }
+
+            val rawBitmap = loadedBitmap ?: run {
+                android.util.Log.e("ScannerOcrDialog", "❌ [갤러리] 다운샘플링 비트맵 디코딩 실패 (null)")
+                return null
+            }
+
+            // 4단계: EXIF 회전 보정 (회전 시 원본 임시 비트맵 recycle 호출로 메모리 누수 즉각 해제)
+            if (rotationDegrees != 0) {
+                val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
+                val rotatedBitmap = Bitmap.createBitmap(
+                    rawBitmap, 0, 0, rawBitmap.width, rawBitmap.height, matrix, true
+                )
+                if (rotatedBitmap != rawBitmap) {
+                    rawBitmap.recycle()
+                }
+                rotatedBitmap
+            } else {
+                rawBitmap
+            }
+        } catch (e: Throwable) {
+            android.util.Log.e("ScannerOcrDialog", "❌ [갤러리] 이미지 로드 중 예외 발생: ${e.message}", e)
             null
         }
     }
@@ -482,7 +516,7 @@ fun ScannerOcrDialog(
                             }
                         }
                     }
-                } else {
+                } else if (detectedCodes.isNotEmpty()) {
                     // Result Detected Code Selection List
                     Column {
                         Box(
@@ -579,6 +613,51 @@ fun ScannerOcrDialog(
                                         }
                                     }
                                 }
+                            }
+                        }
+                    }
+                } else {
+                    // Result: No DTC Codes Detected
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color(0xFFF8FAFC))
+                            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(14.dp))
+                            .padding(16.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFFFFBEB)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = "No Code",
+                                    tint = Color(0xFFD97706),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "고장 코드가 감지되지 않았습니다",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF1E293B)
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    text = "텍스트가 선명하게 보이도록 수평 각도에서 다시 촬영하거나 다른 이미지를 선택해 주세요.",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = Color(0xFF64748B),
+                                        fontSize = 11.sp
+                                    )
+                                )
                             }
                         }
                     }

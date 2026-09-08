@@ -113,7 +113,7 @@ fun DiagnosisScreen(
             if (!spokenText.isNullOrBlank()) {
                 val updated = if (symptomInput.isBlank()) spokenText else "$symptomInput, $spokenText"
                 onSymptomChange(updated)
-                Toast.makeText(context, "음성 인식 완료: $spokenText", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "음성 입력 완료", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -125,7 +125,7 @@ fun DiagnosisScreen(
             isListeningVoice = true
         } else {
             isListeningVoice = false
-            Toast.makeText(context, "음성 인식을 위해 오디오 녹음 권한이 필요합니다.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "마이크 권한 필요", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -670,7 +670,7 @@ fun DiagnosisScreen(
                 if (spokenText.isNotBlank()) {
                     val updated = if (symptomInput.isBlank()) spokenText else "$symptomInput, $spokenText"
                     onSymptomChange(updated)
-                    Toast.makeText(context, "음성 입력이 반영되었습니다.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "음성 입력 반영됨", Toast.LENGTH_SHORT).show()
                 }
             }
         )

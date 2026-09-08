@@ -460,14 +460,14 @@ private fun launchExternalApp(
         } else {
             Toast.makeText(
                 context,
-                "[$appName] 어플이 설치되어 있지 않습니다.",
+                "[$appName] 앱 미설치",
                 Toast.LENGTH_SHORT
             ).show()
         }
     } catch (e: Exception) {
         Toast.makeText(
             context,
-            "어플 실행 중 오류가 발생했습니다: ${e.message}",
+            "앱 실행 실패",
             Toast.LENGTH_SHORT
         ).show()
     }
