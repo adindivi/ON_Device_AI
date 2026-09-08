@@ -122,24 +122,7 @@ fun DiagnosisScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ko-KR")
-                putExtra(RecognizerIntent.EXTRA_PROMPT, "구글 음성입력 (한국어 v3072 패키지 감지됨): 증상을 말씀하세요")
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 1500L)
-                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-            }
-            try {
-                speechLauncher.launch(intent)
-            } catch (e: Exception) {
-                isListeningVoice = false
-                Toast.makeText(context, "구글 음성 입력 실행 (v3072 오프라인 음성 인식 모드)", Toast.LENGTH_SHORT).show()
-                val demoVoiceInput = "계기판에 ABS 경고등이 켜지고 브레이크 페달 스펀지 현상이 발생함"
-                val updated = if (symptomInput.isBlank()) demoVoiceInput else "$symptomInput, $demoVoiceInput"
-                onSymptomChange(updated)
-            }
+            isListeningVoice = true
         } else {
             isListeningVoice = false
             Toast.makeText(context, "음성 인식을 위해 오디오 녹음 권한이 필요합니다.", Toast.LENGTH_SHORT).show()
@@ -147,33 +130,13 @@ fun DiagnosisScreen(
     }
 
     fun startGoogleVoiceInput() {
-        if (isListeningVoice) return // Lock state against rapid consecutive clicks
-        isListeningVoice = true
-
         val hasAudioPermission = androidx.core.content.ContextCompat.checkSelfPermission(
             context,
             android.Manifest.permission.RECORD_AUDIO
         ) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
         if (hasAudioPermission) {
-            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ko-KR")
-                putExtra(RecognizerIntent.EXTRA_PROMPT, "구글 음성입력 (한국어 v3072 패키지 감지됨): 증상을 말씀하세요")
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 1500L)
-                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-            }
-            try {
-                speechLauncher.launch(intent)
-            } catch (e: Exception) {
-                isListeningVoice = false
-                Toast.makeText(context, "구글 음성 입력 실행 (v3072 오프라인 음성 인식)", Toast.LENGTH_SHORT).show()
-                val demoVoiceInput = "계기판에 ABS 경고등이 켜지고 브레이크 페달 스펀지 현상이 발생함"
-                val updated = if (symptomInput.isBlank()) demoVoiceInput else "$symptomInput, $demoVoiceInput"
-                onSymptomChange(updated)
-            }
+            isListeningVoice = true
         } else {
             audioPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
         }
@@ -734,6 +697,20 @@ fun DiagnosisScreen(
         com.example.ui.components.DetailReportDialog(
             history = tempHistory,
             onDismiss = { selectedDocForDetail = null }
+        )
+    }
+
+    if (isListeningVoice) {
+        com.example.ui.components.VoiceRecognitionBottomSheet(
+            onDismiss = { isListeningVoice = false },
+            onResult = { spokenText ->
+                isListeningVoice = false
+                if (spokenText.isNotBlank()) {
+                    val updated = if (symptomInput.isBlank()) spokenText else "$symptomInput, $spokenText"
+                    onSymptomChange(updated)
+                    Toast.makeText(context, "음성 입력이 반영되었습니다.", Toast.LENGTH_SHORT).show()
+                }
+            }
         )
     }
 }

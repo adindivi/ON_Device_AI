@@ -242,68 +242,90 @@ fun ScannerOcrDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(24.dp))
-                .border(1.dp, Color(0xFF38BDF8).copy(alpha = 0.6f), RoundedCornerShape(24.dp)),
-            color = Color(0xEE0F172A) // Porsche/Tesla Dark Steel Glassmorphism
+                .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(24.dp)),
+            color = Color.White,
+            shadowElevation = 8.dp
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(20.dp)
             ) {
-                // Header
+                // Header: Toss Clean Style
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.QrCodeScanner,
-                            contentDescription = "Scanner",
-                            tint = Color(0xFF38BDF8),
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "DTC 스캐너",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color(0xFFF1F5F9)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.QrCodeScanner,
+                                contentDescription = "Scanner",
+                                tint = Color(0xFF191F28),
+                                modifier = Modifier.size(20.dp)
                             )
-                        )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "DTC 스캐너",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF191F28)
+                                )
+                            )
+                            Text(
+                                text = "카메라 / 이미지 AI 고장코드 인식",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = Color(0xFF64748B),
+                                    fontSize = 11.sp
+                                )
+                            )
+                        }
                     }
                     IconButton(
                         onClick = onDismiss,
                         modifier = Modifier
                             .size(32.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF334155))
+                            .background(Color(0xFFF1F5F9))
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close",
-                            tint = Color.White,
+                            tint = Color(0xFF64748B),
                             modifier = Modifier.size(18.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Action Buttons Row: Camera Capture & Image Gallery Upload
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    // Primary Action: Camera Capture (Toss Black)
                     Button(
                         onClick = { startCameraCapture() },
                         enabled = !isScanning,
                         modifier = Modifier
                             .weight(1f)
-                            .height(40.dp)
+                            .height(44.dp)
                             .testTag("btn_capture_camera"),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF004AC6))
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF191F28),
+                            contentColor = Color.White
+                        )
                     ) {
                         Icon(
                             imageVector = Icons.Default.CameraAlt,
@@ -311,30 +333,35 @@ fun ScannerOcrDialog(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(text = "카메라 촬영", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+                        Text(text = "카메라 촬영", fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
                     }
 
-                    OutlinedButton(
+                    // Secondary Action: Gallery Upload (Soft Gray)
+                    Button(
                         onClick = { startGalleryPicker() },
                         enabled = !isScanning,
                         modifier = Modifier
                             .weight(1f)
-                            .height(40.dp)
+                            .height(44.dp)
                             .testTag("btn_upload_image"),
-                        shape = RoundedCornerShape(10.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFF1F5F9),
+                            contentColor = Color(0xFF334155)
+                        )
                     ) {
                         Icon(
                             imageVector = Icons.Default.Image,
                             contentDescription = "Gallery",
-                            tint = Color(0xFF004AC6),
+                            tint = Color(0xFF334155),
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "이미지 업로드",
-                            fontSize = 12.sp,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF004AC6),
+                            color = Color(0xFF334155),
                             maxLines = 1,
                             softWrap = false
                         )
@@ -411,27 +438,27 @@ fun ScannerOcrDialog(
                         )
                     }
                 } else if (!hasScanned) {
-                    // Initial Ready Waiting Box
+                    // Initial Ready Waiting Box (Toss Soft Tone)
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(14.dp))
                             .background(Color(0xFFF8FAFC))
-                            .border(1.5.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
+                            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(14.dp))
                             .padding(16.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
                                 modifier = Modifier
-                                    .size(36.dp)
+                                    .size(38.dp)
                                     .clip(CircleShape)
-                                    .background(Color(0xFFEFF6FF)),
+                                    .background(Color(0xFFF1F5F9)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.QrCodeScanner,
                                     contentDescription = "Ready",
-                                    tint = Color(0xFF004AC6),
+                                    tint = Color(0xFF191F28),
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -444,9 +471,9 @@ fun ScannerOcrDialog(
                                         color = Color(0xFF1E293B)
                                     )
                                 )
-                                Spacer(modifier = Modifier.height(2.dp))
+                                Spacer(modifier = Modifier.height(3.dp))
                                 Text(
-                                    text = "상단의 '카메라 촬영' 또는 '이미지 업로드'를 진행하세요.",
+                                    text = "카메라로 촬영하거나 사진을 업로드하면 고장 코드를 자동 인식합니다.",
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         color = Color(0xFF64748B),
                                         fontSize = 11.sp
