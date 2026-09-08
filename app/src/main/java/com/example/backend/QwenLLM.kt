@@ -1,5 +1,6 @@
 package com.example.backend
 
+import android.util.Log
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +18,9 @@ class QwenLLM(private val context: android.content.Context, private val modelFil
 
     var isModelAvailable: Boolean = false
         private set
+
+    val isReady: Boolean
+        get() = llamaBridge.isLoaded
 
     private var loadedFromUri: Boolean = false
     private var customModelPath: String? = null
@@ -116,7 +120,7 @@ class QwenLLM(private val context: android.content.Context, private val modelFil
             "관련 센서 단자 세척 및 전원/배선 텐션을 재점검하십시오."
         }
 
-        val personaResponse = "🤖 \"정비사님, [$compName$dtcStr$connStr] 점검 가이드입니다.\n$dbAction\""
+        val personaResponse = "[$compName$dtcStr$connStr] 점검 가이드\n$dbAction"
 
         // 큐웬 2.5 공식 RAG 최적화 프롬프트 템플릿 (XML 태그 격리 및 3단계 체크리스트 유도)
         val assistantPrefix = "1. 외관 점검: "
@@ -155,13 +159,19 @@ class QwenLLM(private val context: android.content.Context, private val modelFil
                 assistantPrefix
 
         return flow {
+            if (!llamaBridge.isLoaded) {
+                Log.w("QwenLLM", "Qwen LLM engine not loaded yet (isLoaded=false). Displaying guidance message.")
+                emit("💡 스마트 AI 답변 모델이 아직 준비중입니다!")
+                return@flow
+            }
             emit(personaResponse + "\n\n📝 AI 현장 점검 3단계:\n" + assistantPrefix)
             try {
                 llamaBridge.streamInference(chatPrompt).collect { token ->
                     emit(token)
                 }
             } catch (e: Exception) {
-                emit("\n[에러: ${e.message}]")
+                Log.e("QwenLLM", "LLM inference error: ${e.message}", e)
+                emit("\n\n💡 스마트 AI 답변 모델이 아직 준비중입니다!")
             }
         }
     }

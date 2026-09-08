@@ -386,44 +386,6 @@ fun DiagnosisScreen(
                                     )
                                 }
                             }
-
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            // 4. 주의사항 (Precautions)
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(Color(0xFFFFDAD6).copy(alpha = 0.6f))
-                                    .border(1.dp, Color(0xFFBA1A1A).copy(alpha = 0.4f), RoundedCornerShape(10.dp))
-                                    .padding(12.dp)
-                            ) {
-                                Column {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            imageVector = Icons.Default.ReportProblem,
-                                            contentDescription = "Caution",
-                                            tint = Color(0xFFBA1A1A),
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(
-                                            text = "⚠️ 안전 및 정비 주의사항 (Precautions)",
-                                            style = MaterialTheme.typography.labelSmall.copy(
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color(0xFFBA1A1A)
-                                            )
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = result.warningText,
-                                        fontSize = (11 * textSizeScale).sp,
-                                        color = Color(0xFF93000A),
-                                        lineHeight = 16.sp
-                                    )
-                                }
-                            }
                         }
                     }
                 }

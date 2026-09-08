@@ -17,13 +17,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Psychology
-import androidx.compose.material.icons.filled.ReportProblem
-import androidx.compose.material.icons.filled.Troubleshoot
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -53,8 +50,10 @@ fun DetailReportDialog(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp)),
-            color = Color.White
+                .clip(RoundedCornerShape(24.dp))
+                .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(24.dp)),
+            color = Color.White,
+            shadowElevation = 8.dp
         ) {
             Column(
                 modifier = Modifier
@@ -62,7 +61,7 @@ fun DetailReportDialog(
                     .verticalScroll(rememberScrollState())
                     .padding(20.dp)
             ) {
-                // Header
+                // Header (Toss/Apple Style)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -71,16 +70,16 @@ fun DetailReportDialog(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFF3E3FCC)),
+                                .size(38.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color(0xFF191F28)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Psychology,
                                 contentDescription = "AI Report",
                                 tint = Color.White,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                         Spacer(modifier = Modifier.width(10.dp))
@@ -89,12 +88,18 @@ fun DetailReportDialog(
                                 text = "AI 진단 보고서",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF3E3FCC)
+                                    color = Color(0xFF191F28),
+                                    fontSize = 17.sp
                                 )
                             )
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "DTC: ${history.dtcCode}",
-                                style = MaterialTheme.typography.bodySmall.copy(color = Color(0xFF64748B))
+                                text = "DTC: ${history.dtcCode.ifBlank { "자가진단" }}",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = Color(0xFF64748B),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
                             )
                         }
                     }
@@ -110,192 +115,126 @@ fun DetailReportDialog(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close",
                             tint = Color(0xFF64748B),
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // 1. 고장 코드 및 증상 상세 설명 (Explanation)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(Color(0xFFF8FAFC))
-                        .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(10.dp))
-                        .padding(12.dp)
-                ) {
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Troubleshoot,
-                                contentDescription = "Explanation",
-                                tint = Color(0xFF2563EB),
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "📖 고장 설명 (Explanation)",
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF1E293B)
+                // 1. 점검 우선순위 (Checkpoints)
+                if (checksList.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color(0xFFF8FAFC))
+                            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(14.dp))
+                            .padding(14.dp)
+                    ) {
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Build,
+                                    contentDescription = "Checkpoints",
+                                    tint = Color(0xFF191F28),
+                                    modifier = Modifier.size(16.dp)
                                 )
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = history.fullAnalysis,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = Color(0xFF475569),
-                                lineHeight = 22.sp
-                            )
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // 2. 추정 원인 (Potential Causes)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(Color(0xFFF8FAFC))
-                        .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(10.dp))
-                        .padding(12.dp)
-                ) {
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Build,
-                                contentDescription = "Causes",
-                                tint = Color(0xFF2563EB),
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "🔍 추정 원인 (Potential Causes)",
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF2563EB)
-                                )
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        checksList.forEach { checkItem ->
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(vertical = 2.dp)
-                            ) {
+                                Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "• ",
-                                    color = Color(0xFF2563EB),
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = checkItem,
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        color = Color(0xFF334155),
-                                        fontWeight = FontWeight.Medium
+                                    text = "점검 우선순위 (Checkpoints)",
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF191F28),
+                                        fontSize = 13.sp
                                     )
                                 )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            checksList.forEach { checkItem ->
+                                Row(
+                                    verticalAlignment = Alignment.Top,
+                                    modifier = Modifier.padding(vertical = 3.dp)
+                                ) {
+                                    Text(
+                                        text = "• ",
+                                        color = Color(0xFF191F28),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp
+                                    )
+                                    Text(
+                                        text = checkItem,
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            color = Color(0xFF334155),
+                                            fontWeight = FontWeight.Medium,
+                                            lineHeight = 18.sp
+                                        )
+                                    )
+                                }
                             }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // 3. 정비 조치 가이드 (Repair Advice)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(Color(0xFFF1EEFF))
-                        .border(1.dp, Color(0xFFC0C1FF), RoundedCornerShape(10.dp))
-                        .padding(12.dp)
-                ) {
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Lightbulb,
-                                contentDescription = "Advice",
-                                tint = Color(0xFF3E3FCC),
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "💡 정비 조치 가이드 (Repair Advice)",
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF3E3FCC)
-                                )
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = history.solutionText,
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                color = Color(0xFF2A2B99),
-                                lineHeight = 18.sp
-                            )
-                        )
+                // 2. 정비 조치 가이드 (Repair Advice)
+                val adviceText = history.fullAnalysis.ifBlank { history.solutionText }
+                if (adviceText.isNotBlank()) {
+                    if (checksList.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(12.dp))
                     }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // 4. 주의사항 (Precautions)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(Color(0xFFFEF2F2))
-                        .border(1.dp, Color(0xFFFECACA), RoundedCornerShape(10.dp))
-                        .padding(12.dp)
-                ) {
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.ReportProblem,
-                                contentDescription = "Warning",
-                                tint = Color(0xFFDC2626),
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color(0xFFF8FAFC))
+                            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(14.dp))
+                            .padding(14.dp)
+                    ) {
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Lightbulb,
+                                    contentDescription = "Advice",
+                                    tint = Color(0xFF191F28),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "정비 조치 가이드 (Repair Advice)",
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF191F28),
+                                        fontSize = 13.sp
+                                    )
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "⚠️ 안전 및 정비 주의사항 (Precautions)",
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFDC2626)
+                                text = adviceText,
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = Color(0xFF334155),
+                                    lineHeight = 20.sp
                                 )
                             )
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = history.warningText,
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                color = Color(0xFF991B1B),
-                                fontSize = 11.sp,
-                                lineHeight = 16.sp
-                            )
-                        )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(18.dp))
 
+                // 확인 완료 버튼 (Toss Black)
                 Button(
                     onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(46.dp),
+                    shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF2563EB),
+                        containerColor = Color(0xFF191F28),
                         contentColor = Color.White
                     )
                 ) {
-                    Text("확인 완료", fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("확인 완료", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.White)
                 }
             }
         }

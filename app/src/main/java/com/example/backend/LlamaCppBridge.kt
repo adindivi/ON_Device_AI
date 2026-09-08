@@ -26,6 +26,9 @@ class LlamaCppBridge(private val context: Context) : Closeable {
     private var currentContextId: Int? = null
     private var isModelLoaded: Boolean = false
     private var modelPath: String = ""
+
+    val isLoaded: Boolean
+        get() = isModelLoaded && currentContextId != null && llamaAndroidInstance != null
     
     // Callback to receive JSON events from native
     private var nativeCallback: ((String) -> Unit)? = null
