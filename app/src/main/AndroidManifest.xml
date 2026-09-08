@@ -5,6 +5,12 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- 2D/3D AR 외부 어플 패키지 가시성(Package Visibility) 권한 선언 -->
+    <queries>
+        <package android:name="com.smartarecumap.kyh" />
+        <package android:name="com.smartpinch3d.kyh" />
+    </queries>
+
     <application
         android:allowBackup="false"
         android:fullBackupOnly="false"

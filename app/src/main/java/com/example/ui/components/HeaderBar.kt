@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -36,10 +37,13 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.ui.theme.TossBlack
 import com.example.ui.theme.TossGray200
 import com.example.ui.theme.TossGray500
@@ -92,28 +96,19 @@ fun HeaderBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Logo box: white bg + black border + code icon
-                Box(
+                // App Logo: Splash Icon (선명한 자동차 진단 로고)
+                Image(
+                    painter = painterResource(id = R.drawable.splash_icon),
+                    contentDescription = "On-Device AI App Logo",
                     modifier = Modifier
                         .size(32.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(TossWhite)
-                        .border(2.dp, TossBlack, RoundedCornerShape(8.dp))
                         .pointerInput(Unit) {
                             detectTapGestures(onLongPress = { onAdminLongPress() })
                         }
                         .testTag("btn_car_logo"),
-                    contentAlignment = Alignment.Center
-                ) {
-                    // Code icon: </> rendered as Text for crisp look
-                    Text(
-                        text = "</>",
-                        fontSize = 7.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = TossBlack,
-                        letterSpacing = (-0.5).sp
-                    )
-                }
+                    contentScale = ContentScale.Crop
+                )
 
                 Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
                     Text(

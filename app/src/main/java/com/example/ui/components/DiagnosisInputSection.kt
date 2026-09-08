@@ -1,5 +1,8 @@
 package com.example.ui.components
 
+import android.content.Context
+import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -39,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -86,25 +90,93 @@ fun DiagnosisInputSection(
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
 
-            // ── Section Header ─────────────────────────────────────────────────
+            // ── Section Header & 2D/3D AR Launch Buttons ──────────────────────
+            val context = LocalContext.current
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Diagnosis",
-                    tint = TossBlack,
-                    modifier = Modifier.size(20.dp)
-                )
-                Text(
-                    text = "진단 데이터 입력",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = TossBlack,
-                        fontSize = (17 * textSizeScale).sp
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Diagnosis",
+                        tint = TossBlack,
+                        modifier = Modifier.size(20.dp)
                     )
-                )
+                    Text(
+                        text = "진단 데이터 입력",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = TossBlack,
+                            fontSize = (17 * textSizeScale).sp
+                        )
+                    )
+                }
+
+                // ── 2D/3D AR 연동 슬림 캡슐 세그먼트 ([ 2D │ 3D ]) ─────────────
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color.White)
+                        .border(1.dp, Color(0xFFCBD5E1), RoundedCornerShape(20.dp)),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // [2D] 세그먼트 -> com.smartarecumap.kyh
+                    Box(
+                        modifier = Modifier
+                            .clickable {
+                                launchExternalApp(
+                                    context = context,
+                                    packageName = "com.smartarecumap.kyh",
+                                    appName = "SmartAR ECU MAP(2D)"
+                                )
+                            }
+                            .padding(horizontal = 11.dp, vertical = 5.dp)
+                            .testTag("btn_ar_2d"),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "2D",
+                            fontSize = (12 * textSizeScale).sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF334155)
+                        )
+                    }
+
+                    // 수직 구분선
+                    Box(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .height(14.dp)
+                            .background(Color(0xFFE2E8F0))
+                    )
+
+                    // [3D] 세그먼트 -> com.smartpinch3d.kyh
+                    Box(
+                        modifier = Modifier
+                            .clickable {
+                                launchExternalApp(
+                                    context = context,
+                                    packageName = "com.smartpinch3d.kyh",
+                                    appName = "SmartPinch 3D"
+                                )
+                            }
+                            .padding(horizontal = 11.dp, vertical = 5.dp)
+                            .testTag("btn_ar_3d"),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "3D",
+                            fontSize = (12 * textSizeScale).sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF334155)
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -364,3 +436,40 @@ private fun QuickChip(
         }
     }
 }
+
+/**
+ * 2D/3D 외부 AR 어플리케이션(SmartAR ECU MAP / SmartPinch 3D) 호출 헬퍼 함수
+ * 
+ * - 안드로이드 시스템 Intent를 사용하여 외부 어플을 엽니다.
+ * - 타깃 어플이 미설치된 경우 비정상 종료(Crash)를 방지하고 Toast 알림으로 안전하게 안내합니다.
+ * 
+ * @param context 안드로이드 컨텍스트
+ * @param packageName 호출 대상 패키지명 (2D: com.smartarecumap.kyh, 3D: com.smartpinch3d.kyh)
+ * @param appName 토스트 알림에 표시할 어플리케이션 명칭
+ */
+private fun launchExternalApp(
+    context: Context,
+    packageName: String,
+    appName: String
+) {
+    try {
+        val launchIntent = context.packageManager.getLaunchIntentForPackage(packageName)
+        if (launchIntent != null) {
+            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(launchIntent)
+        } else {
+            Toast.makeText(
+                context,
+                "[$appName] 어플이 설치되어 있지 않습니다.",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    } catch (e: Exception) {
+        Toast.makeText(
+            context,
+            "어플 실행 중 오류가 발생했습니다: ${e.message}",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+}
+
