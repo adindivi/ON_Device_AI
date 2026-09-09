@@ -209,8 +209,8 @@ fun WeightSettingsDialog(
     var dtcBoost    by remember { mutableFloatStateOf(initialWeights.dtcExactBoost) }
     var compBoost   by remember { mutableFloatStateOf(initialWeights.compMatchBoost) }
     var textBoost   by remember { mutableFloatStateOf(initialWeights.textOverlapBoost) }
-    var aiScale     by remember { mutableFloatStateOf(initialWeights.aiAmpScale) }
     var upvoteScale by remember { mutableFloatStateOf(initialWeights.upvoteBonusScale) }
+    var aiWeight    by remember { mutableFloatStateOf(initialWeights.aiTrackWeight) }
 
     val scrollState = rememberScrollState()
 
@@ -271,8 +271,8 @@ fun WeightSettingsDialog(
                             dtcBoost    = defaultWeights.dtcExactBoost
                             compBoost   = defaultWeights.compMatchBoost
                             textBoost   = defaultWeights.textOverlapBoost
-                            aiScale     = defaultWeights.aiAmpScale
                             upvoteScale = defaultWeights.upvoteBonusScale
+                            aiWeight    = defaultWeights.aiTrackWeight
                             onReset()
                         },
                         modifier = Modifier
@@ -292,7 +292,7 @@ fun WeightSettingsDialog(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
-                    text = "슬라이더를 조절하여 AI 추천 순위 알고리즘 가중치를 커스텀하십시오.",
+                    text = "슬라이더를 조절하여 하이브리드 RRF 추천 알고리즘 가중치를 커스텀하십시오.",
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = TossGray500,
                         fontSize = 12.sp,
@@ -304,7 +304,17 @@ fun WeightSettingsDialog(
                 HorizontalDivider(color = TossGray200, thickness = 1.dp)
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // ── 슬라이더 항목들 ───────────────────────────────────────────────
+                // ── [섹션 1] 트랙 1: 키워드 & 정비 데이터 가중치 ─────────────────────
+                Text(
+                    text = "트랙 1: 키워드 & 정비 데이터 가중치",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = TossGray600,
+                        fontSize = 12.sp
+                    )
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+
                 WeightSliderItem(
                     emoji = "🥇",
                     number = 1,
@@ -336,24 +346,78 @@ fun WeightSettingsDialog(
                 )
 
                 WeightSliderItem(
-                    emoji = "🧠",
-                    number = 4,
-                    title = "AI 코사인 유사도 증폭점수",
-                    value = aiScale,
-                    valueRange = 0.0f..10.0f,
-                    description = "Ko-SBERT AI 문맥 유사도 고신뢰 증폭 최고점 (기본 4.0점, 임계값 50%)",
-                    onValueChange = { aiScale = (it * 2).toInt() / 2.0f }
-                )
-
-                WeightSliderItem(
                     emoji = "👍",
-                    number = 5,
+                    number = 4,
                     title = "현장 추천 보너스 점수",
                     value = upvoteScale,
-                    valueRange = 0.0f..5.0f,
+                    valueRange = 0.0f..3.0f,
                     description = "정비사 도움됨 추천 누적 1회당 적용되는 가산점 (기본 1.0점)",
                     onValueChange = { upvoteScale = (it * 10).toInt() / 10.0f }
                 )
+
+                Spacer(modifier = Modifier.height(10.dp))
+                HorizontalDivider(color = TossGray200, thickness = 1.dp)
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // ── [섹션 2] 트랙 2: 표준 RRF AI 문맥 반영 배율 (하단 직관적 분리 카드) ──
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = Color(0xFFF8FAFC),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(Color(0xFFEEF2FF)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("🧠", fontSize = 13.sp)
+                            }
+                            Text(
+                                text = "트랙 2: 표준 RRF AI 문맥 가중치",
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1E293B),
+                                    fontSize = 13.sp
+                                )
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "최종 순위 산출 시, 키워드(1.0x) 대비 온디바이스 Ko-SBERT AI의 의미 분석을 몇 배로 반영할지 결정합니다.",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = TossGray500,
+                                fontSize = 11.sp,
+                                lineHeight = 15.sp
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        WeightSliderItem(
+                            emoji = "⚡",
+                            number = 5,
+                            title = "AI 문맥 종합 반영 배율",
+                            value = aiWeight,
+                            valueRange = 0.0f..3.0f,
+                            unit = "x",
+                            description = when {
+                                aiWeight == 0.0f -> "AI 문맥 무시 (키워드 100% 전용 검색)"
+                                aiWeight < 1.0f  -> "키워드 우선 모드 (AI ${String.format(Locale.getDefault(), "%.1f", aiWeight)}x 반영)"
+                                aiWeight == 1.0f -> "표준 균형 모드 (키워드 1.0x : AI 1.0x 동등)"
+                                aiWeight <= 2.0f -> "AI 문맥 우대 모드 (AI ${String.format(Locale.getDefault(), "%.1f", aiWeight)}x 강력 반영)"
+                                else             -> "AI 문맥 최우선 모드 (AI ${String.format(Locale.getDefault(), "%.1f", aiWeight)}x 초강력 반영)"
+                            },
+                            onValueChange = { aiWeight = (it * 10).toInt() / 10.0f }
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(18.dp))
 
@@ -388,8 +452,9 @@ fun WeightSettingsDialog(
                                 dtcExactBoost    = dtcBoost,
                                 compMatchBoost   = compBoost,
                                 textOverlapBoost = textBoost,
-                                aiAmpScale       = aiScale,
-                                upvoteBonusScale = upvoteScale
+                                upvoteBonusScale = upvoteScale,
+                                aiTrackWeight    = aiWeight,
+                                aiAmpScale       = 4.0f
                             )
                             onSave(updatedWeights)
                         },
@@ -423,6 +488,7 @@ private fun WeightSliderItem(
     value: Float,
     valueRange: ClosedFloatingPointRange<Float>,
     description: String,
+    unit: String = "점",
     onValueChange: (Float) -> Unit
 ) {
     Column(
@@ -454,7 +520,7 @@ private fun WeightSliderItem(
                     .padding(horizontal = 9.dp, vertical = 3.dp)
             ) {
                 Text(
-                    text = "${String.format(Locale.getDefault(), "%.1f", value)}점",
+                    text = "${String.format(Locale.getDefault(), "%.1f", value)}$unit",
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontWeight = FontWeight.Bold,
                         color = ValueBadgeFg,

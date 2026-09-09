@@ -15,7 +15,7 @@ android {
   ndkVersion = "30.0.15729638"
 
   defaultConfig {
-    applicationId = "com.aistudio.cardiag.wppgso"
+    applicationId = "com.ondeviceai.kyh"
     minSdk = 24
     targetSdk = 36
     versionCode = 1

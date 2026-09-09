@@ -124,7 +124,7 @@ class RAGSearcher(
         // 7. RRF 융합 점수 및 4단계 DTC 계층 신뢰도 산출
         val kConstant = RRF_K_SMOOTHING
         val wKeyword = WEIGHT_KEYWORD_TRACK
-        val wVector = WEIGHT_VECTOR_TRACK
+        val wVector = activeWeights.aiTrackWeight
         val maxTheoreticalRrf = (wKeyword / (kConstant + 1.0f)) + (wVector / (kConstant + 1.0f))
 
         val rrfResults = intermediateList.map { item ->
@@ -137,7 +137,7 @@ class RAGSearcher(
                 0.0f
             }
 
-            val vecContribution = if (isPureDtcQuery) {
+            val vecContribution = if (isPureDtcQuery || wVector <= 0f) {
                 0.0f
             } else {
                 wVector / (kConstant + vRank)
@@ -231,11 +231,11 @@ class RAGSearcher(
     }
 
     /**
-     * [기능 8] 벡터 트랙 순위 맵 생성 (의미 유사도 + 추천수 보너스 순)
+     * [기능 8] 벡터 트랙 순위 맵 생성 (표준 RRF: 100% 순수 AI 문맥 코사인 유사도 기준)
      */
     private fun buildVectorRankMap(items: List<IntermediateEntry>): Map<String, Int> {
         return items
-            .sortedByDescending { it.scoreDetail.vectorTrackScore + it.scoreDetail.bonusScore }
+            .sortedByDescending { it.scoreDetail.cosSim }
             .mapIndexed { index, item -> item.entry.id to (index + 1) }
             .toMap()
     }

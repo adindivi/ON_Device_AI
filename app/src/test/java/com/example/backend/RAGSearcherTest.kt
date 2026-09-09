@@ -354,6 +354,41 @@ class RAGSearcherTest {
         assertTrue("무관 문서 신뢰도 <= 74% (실제: ${results[4].confidencePercent})", results[4].confidencePercent!! <= 74.0f)
         assertTrue("무관 문서 점수 < 1.0 (실제: ${results[4].score})", results[4].score < 1.0f)
     }
+
+    @Test
+    fun `search - 표준 RRF 벡터 트랙 가중치 aiTrackWeight 변동 시 점수 반영 검증`() {
+        // Given
+        val entry1 = createEntry(
+            id = "DOC-A",
+            text = "시동 불량 배터리 전압 저하",
+            component = "배터리"
+        )
+        val entry2 = createEntry(
+            id = "DOC-B",
+            text = "타이어 공기압 센서 경고등",
+            component = "타이어"
+        )
+        vectorDb.addDocumentsBatch(listOf(entry1, entry2))
+
+        // When 1: aiTrackWeight = 1.0 (기본)
+        val defaultResults = ragSearcher.search("시동 배터리", weights = ScoringWeights(aiTrackWeight = 1.0f))
+
+        // When 2: aiTrackWeight = 2.0 (AI 2배 반영)
+        val amplifiedResults = ragSearcher.search("시동 배터리", weights = ScoringWeights(aiTrackWeight = 2.0f))
+
+        // When 3: aiTrackWeight = 0.0 (AI 반영 제외)
+        val zeroAiResults = ragSearcher.search("시동 배터리", weights = ScoringWeights(aiTrackWeight = 0.0f))
+
+        // Then: AI 가중치가 높을수록 RRF 베이스 점수가 단계적으로 상승해야 함
+        assertTrue(
+            "AI 2배 가중치 점수(${amplifiedResults[0].score}) > 기본 가중치 점수(${defaultResults[0].score})",
+            amplifiedResults[0].score > defaultResults[0].score
+        )
+        assertTrue(
+            "기본 가중치 점수(${defaultResults[0].score}) > AI 0배 가중치 점수(${zeroAiResults[0].score})",
+            defaultResults[0].score > zeroAiResults[0].score
+        )
+    }
 }
 
 
