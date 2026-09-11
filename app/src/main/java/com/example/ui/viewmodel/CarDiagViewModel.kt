@@ -525,7 +525,18 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    /**
+     * [applyOcrCode]
+     * - OCR 스캐너 다이얼로그에서 선택된 고장 코드(단일 또는 다중 ISO-ROOT)를 진단 입력창에 적용.
+     * - ISO-ROOT 쿼리는 단일 코드 정규식으로 필터링되지 않도록 보호합니다.
+     */
     fun applyOcrCode(code: String) {
+        if (code.startsWith("ISO-ROOT: ")) {
+            _dtcInput.value = code
+            _showScannerModal.value = false
+            showToast("다중 고장코드 근본 원인(Root Cause) 모드 적용됨")
+            return
+        }
         val ocrResult = backendEngine.runOcr(code)
         val extractedDtc = ocrResult.dtcCodes.firstOrNull() ?: code
         _dtcInput.value = extractedDtc

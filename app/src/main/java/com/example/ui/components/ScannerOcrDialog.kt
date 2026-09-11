@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
@@ -34,7 +35,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
@@ -72,6 +73,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.core.content.ContextCompat
 import com.example.backend.OcrEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -106,17 +108,20 @@ fun ScannerOcrDialog(
         scanJob?.cancel()
 
         scanJob = scope.launch(Dispatchers.Default) {
-            // Google ML Kit 딥러닝 비전 텍스트 인지 분석
+            // Google ML Kit 오프라인 비전 텍스트 심층 분석
             val ocrResult = OcrEngine.analyzeBitmapImage(bitmap)
 
             withContext(Dispatchers.Main) {
                 detectedCodes.clear()
                 if (ocrResult.dtcCodes.isNotEmpty()) {
                     detectedCodes.addAll(ocrResult.dtcCodes)
-                    Toast.makeText(context, "OCR 판독 완료: ${detectedCodes.size}개 코드", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "OCR 해독 완료: ${detectedCodes.size}개 코드", Toast.LENGTH_SHORT).show()
+                } else if (ocrResult.rawText.isBlank()) {
+                    android.util.Log.w("ScannerOcrDialog", "ML Kit OCR: Blank text detected. Rejecting.")
+                    Toast.makeText(context, "글자가 흐리거나 초점이 맞지 않습니다. 다시 찰칵! 찍어주세요.", Toast.LENGTH_LONG).show()
                 } else {
                     android.util.Log.w("ScannerOcrDialog", "ML Kit OCR: No DTC codes detected in image ($imageSourceTitle)")
-                    Toast.makeText(context, "고장 코드 미감지", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "고장 코드가 안 보입니다! 위치를 맞춰 다시 찍어주세요.", Toast.LENGTH_LONG).show()
                 }
 
                 isScanning = false
@@ -124,95 +129,16 @@ fun ScannerOcrDialog(
         }
     }
 
-    // Camera Capture Launcher
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview()
-    ) { bitmap ->
-        if (bitmap != null) {
-            runRealOcrProcessing(bitmap, "카메라 촬영 이미지")
-        }
-    }
+    var showLiveCamera by remember { mutableStateOf(false) }
 
     // Camera Permission Launcher
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            cameraLauncher.launch(null)
+            showLiveCamera = true
         } else {
             Toast.makeText(context, "카메라 권한 필요", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    // 갤러리 이미지 EXIF 회전각 자동 보정 및 OOM 방지 다운샘플링 디코딩 함수
-    fun decodeGalleryUriWithExifCorrection(uri: Uri): Bitmap? {
-        return try {
-            var rotationDegrees = 0
-            context.contentResolver.openInputStream(uri)?.use { stream ->
-                val exif = ExifInterface(stream)
-                val orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
-                rotationDegrees = when (orientation) {
-                    ExifInterface.ORIENTATION_ROTATE_90 -> 90
-                    ExifInterface.ORIENTATION_ROTATE_180 -> 180
-                    ExifInterface.ORIENTATION_ROTATE_270 -> 270
-                    else -> 0
-                }
-            }
-
-            // 1단계: OOM 방지를 위해 비트맵 메모리 할당 없이 원본 해상도(Bounds)만 먼저 측정
-            val boundsOptions = BitmapFactory.Options().apply {
-                inJustDecodeBounds = true
-            }
-            context.contentResolver.openInputStream(uri)?.use { stream ->
-                BitmapFactory.decodeStream(stream, null, boundsOptions)
-            }
-
-            val origWidth = boundsOptions.outWidth
-            val origHeight = boundsOptions.outHeight
-            if (origWidth <= 0 || origHeight <= 0) {
-                android.util.Log.w("ScannerOcrDialog", "⚠️ [갤러리] 유효하지 않은 이미지 크기: ${origWidth}x${origHeight}")
-                return null
-            }
-
-            // 2단계: Google ML Kit OCR에 최적인 최대 1280px 해상도로 inSampleSize(2의 거듭제곱) 계산
-            val maxDimension = 1280
-            var sampleSize = 1
-            while ((origWidth / sampleSize) > maxDimension || (origHeight / sampleSize) > maxDimension) {
-                sampleSize *= 2
-            }
-
-            // 3단계: 다운샘플링 적용하여 안전하게 디코딩
-            val decodeOptions = BitmapFactory.Options().apply {
-                inSampleSize = sampleSize
-                inPreferredConfig = Bitmap.Config.ARGB_8888
-            }
-
-            var loadedBitmap: Bitmap? = null
-            context.contentResolver.openInputStream(uri)?.use { stream ->
-                loadedBitmap = BitmapFactory.decodeStream(stream, null, decodeOptions)
-            }
-
-            val rawBitmap = loadedBitmap ?: run {
-                android.util.Log.e("ScannerOcrDialog", "❌ [갤러리] 다운샘플링 비트맵 디코딩 실패 (null)")
-                return null
-            }
-
-            // 4단계: EXIF 회전 보정 (회전 시 원본 임시 비트맵 recycle 호출로 메모리 누수 즉각 해제)
-            if (rotationDegrees != 0) {
-                val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
-                val rotatedBitmap = Bitmap.createBitmap(
-                    rawBitmap, 0, 0, rawBitmap.width, rawBitmap.height, matrix, true
-                )
-                if (rotatedBitmap != rawBitmap) {
-                    rawBitmap.recycle()
-                }
-                rotatedBitmap
-            } else {
-                rawBitmap
-            }
-        } catch (e: Throwable) {
-            android.util.Log.e("ScannerOcrDialog", "❌ [갤러리] 이미지 로드 중 예외 발생: ${e.message}", e)
-            null
         }
     }
 
@@ -222,7 +148,7 @@ fun ScannerOcrDialog(
     ) { uri ->
         if (uri != null) {
             try {
-                val correctedBitmap = decodeGalleryUriWithExifCorrection(uri)
+                val correctedBitmap = decodeGalleryUriWithExifCorrection(context, uri)
                 if (correctedBitmap != null) {
                     runRealOcrProcessing(correctedBitmap, "갤러리 선택 이미지")
                 } else {
@@ -242,7 +168,7 @@ fun ScannerOcrDialog(
         ) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
         if (hasCameraPermission) {
-            cameraLauncher.launch(null)
+            showLiveCamera = true
         } else {
             cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
         }
@@ -271,7 +197,18 @@ fun ScannerOcrDialog(
         label = "laser_y"
     )
 
-    Dialog(onDismissRequest = onDismiss) {
+    if (showLiveCamera) {
+        CameraXLiveScanner(
+            onBitmapCaptured = { bitmap ->
+                runRealOcrProcessing(bitmap, "라이브 스캐너")
+                showLiveCamera = false
+            },
+            onClose = {
+                showLiveCamera = false
+            }
+        )
+    } else {
+        Dialog(onDismissRequest = onDismiss) {
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -554,13 +491,30 @@ fun ScannerOcrDialog(
 
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "진단창에 입력할 코드를 클릭하세요:",
+                            text = "진단창에 입력할 코드를 클릭하세요.",
                             style = MaterialTheme.typography.bodySmall.copy(
                                 color = Color(0xFF64748B),
                                 fontWeight = FontWeight.Medium
                             )
                         )
                         Spacer(modifier = Modifier.height(8.dp))
+
+                        // [다중 고장코드 근본 원인 통합 진단 버튼]
+                        // 스캔된 DTC가 2개 이상일 때 나타나며, ISO-ROOT 접두사를 부착하여 AI가 연관 공통 원인을 분석하도록 유도
+                        if (detectedCodes.size > 1) {
+                            Button(
+                                onClick = { 
+                                    val rootCauseCode = "ISO-ROOT: " + detectedCodes.joinToString(",")
+                                    onSelectCode(rootCauseCode) 
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4F46E5)),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("🔍 다중 코드 근본 원인(Root Cause) 통합 진단", color = Color.White, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
 
                         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             items(detectedCodes) { code ->
@@ -605,7 +559,7 @@ fun ScannerOcrDialog(
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Icon(
-                                                imageVector = Icons.Default.ArrowForward,
+                                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                                                 contentDescription = "Select",
                                                 tint = Color(0xFF2563EB),
                                                 modifier = Modifier.size(16.dp)
@@ -664,5 +618,80 @@ fun ScannerOcrDialog(
                 }
             }
         }
+    }
+}
+}
+
+/**
+ * 갤러리 이미지 EXIF 회전각 자동 보정 및 OOM 방지 다운샘플링 디코딩 함수 (단일 책임 원칙 적용 및 UI 분리)
+ */
+private fun decodeGalleryUriWithExifCorrection(context: Context, uri: Uri): Bitmap? {
+    return try {
+        var rotationDegrees = 0
+        context.contentResolver.openInputStream(uri)?.use { stream ->
+            val exif = ExifInterface(stream)
+            val orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+            rotationDegrees = when (orientation) {
+                ExifInterface.ORIENTATION_ROTATE_90 -> 90
+                ExifInterface.ORIENTATION_ROTATE_180 -> 180
+                ExifInterface.ORIENTATION_ROTATE_270 -> 270
+                else -> 0
+            }
+        }
+
+        // 1단계: OOM 방지를 위해 비트맵 메모리 할당 없이 원본 해상도(Bounds)만 먼저 측정
+        val boundsOptions = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+        context.contentResolver.openInputStream(uri)?.use { stream ->
+            BitmapFactory.decodeStream(stream, null, boundsOptions)
+        }
+
+        val origWidth = boundsOptions.outWidth
+        val origHeight = boundsOptions.outHeight
+        if (origWidth <= 0 || origHeight <= 0) {
+            android.util.Log.w("ScannerOcrDialog", "⚠️ [갤러리] 유효하지 않은 이미지 크기: ${origWidth}x${origHeight}")
+            return null
+        }
+
+        // 2단계: Google ML Kit OCR에 최적인 최대 1280px 해상도로 inSampleSize(2의 거듭제곱) 계산
+        val maxDimension = 1280
+        var sampleSize = 1
+        while ((origWidth / sampleSize) > maxDimension || (origHeight / sampleSize) > maxDimension) {
+            sampleSize *= 2
+        }
+
+        // 3단계: 다운샘플링 적용하여 안전하게 디코딩
+        val decodeOptions = BitmapFactory.Options().apply {
+            inSampleSize = sampleSize
+            inPreferredConfig = Bitmap.Config.ARGB_8888
+        }
+
+        var loadedBitmap: Bitmap? = null
+        context.contentResolver.openInputStream(uri)?.use { stream ->
+            loadedBitmap = BitmapFactory.decodeStream(stream, null, decodeOptions)
+        }
+
+        val rawBitmap = loadedBitmap ?: run {
+            android.util.Log.e("ScannerOcrDialog", "❌ [갤러리] 다운샘플링 비트맵 디코딩 실패 (null)")
+            return null
+        }
+
+        // 4단계: EXIF 회전 보정 (회전 시 원본 임시 비트맵 recycle 호출로 메모리 누수 즉각 해제)
+        if (rotationDegrees != 0) {
+            val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
+            val rotatedBitmap = Bitmap.createBitmap(
+                rawBitmap, 0, 0, rawBitmap.width, rawBitmap.height, matrix, true
+            )
+            if (rotatedBitmap != rawBitmap) {
+                rawBitmap.recycle()
+            }
+            rotatedBitmap
+        } else {
+            rawBitmap
+        }
+    } catch (e: Throwable) {
+        android.util.Log.e("ScannerOcrDialog", "❌ [갤러리] 이미지 로드 중 예외 발생: ${e.message}", e)
+        null
     }
 }

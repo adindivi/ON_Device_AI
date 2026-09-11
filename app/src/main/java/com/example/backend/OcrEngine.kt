@@ -33,27 +33,80 @@ object OcrEngine {
     }
 
     /**
-     * 구글 ML Kit AI 비전 모델로 비트맵 사진 속 글자를 딥러닝 인지하여 DTC 고장코드 파싱
+     * 구글 ML Kit AI 비전 모델로 비트맵 엔진에 한글/영어 섞인 이미지를 투입하여 DTC 고장코드 파싱
      */
     suspend fun analyzeBitmapImage(bitmap: Bitmap): OcrResult = suspendCoroutine { continuation ->
+        var enhancedBitmap: Bitmap? = null
         try {
-            val image = InputImage.fromBitmap(bitmap, 0)
+            enhancedBitmap = enhanceBitmapForOcr(bitmap)
+            val image = InputImage.fromBitmap(enhancedBitmap, 0)
             recognizer.process(image)
                 .addOnSuccessListener { visionText ->
-                    val fullRecognizedText = visionText.text
-                    val parsedResult = processOcrText(fullRecognizedText)
-                    continuation.resume(parsedResult)
+                    try {
+                        val fullRecognizedText = visionText.text
+                        val parsedResult = processOcrText(fullRecognizedText)
+                        continuation.resume(parsedResult)
+                    } finally {
+                        recycleSafely(enhancedBitmap)
+                    }
                 }
                 .addOnFailureListener {
-                    continuation.resume(
-                        OcrResult(success = false, rawText = "", dtcCodes = emptyList())
-                    )
+                    try {
+                        continuation.resume(
+                            OcrResult(success = false, rawText = "", dtcCodes = emptyList())
+                        )
+                    } finally {
+                        recycleSafely(enhancedBitmap)
+                    }
                 }
         } catch (e: Exception) {
+            recycleSafely(enhancedBitmap)
             continuation.resume(
                 OcrResult(success = false, rawText = "", dtcCodes = emptyList())
             )
         }
+    }
+
+    /**
+     * [recycleSafely]
+     * - Bitmap 자원을 안전하게 반환하여 연속 스캔 시 네이티브 메모리(OOM) 누수를 방지하는 헬퍼 함수
+     */
+    private fun recycleSafely(target: Bitmap?) {
+        if (target != null && !target.isRecycled) {
+            target.recycle()
+        }
+    }
+
+    /**
+     * [enhanceBitmapForOcr] - 안드로이드 순정 ColorMatrix 필터 전처리
+     * - OpenCV 같은 대용량 라이브러리 추가 없이(앱 용량 0MB 증가) 흑백 변환 및 대비 1.5배 강조
+     * - 어두운 지하 주차장이나 빛 반사 계기판 화면에서도 텍스트 외곽선을 뚜렷하게 보정합니다.
+     */
+    fun enhanceBitmapForOcr(original: Bitmap): Bitmap {
+        val config = original.config ?: Bitmap.Config.ARGB_8888
+        val resultBitmap = Bitmap.createBitmap(original.width, original.height, config)
+        val canvas = android.graphics.Canvas(resultBitmap)
+        val paint = android.graphics.Paint()
+
+        val grayMatrix = android.graphics.ColorMatrix()
+        grayMatrix.setSaturation(0f)
+
+        val contrast = 1.5f
+        val translate = (-0.5f * contrast + 0.5f) * 255f
+        val contrastMatrix = android.graphics.ColorMatrix(floatArrayOf(
+            contrast, 0f, 0f, 0f, translate,
+            0f, contrast, 0f, 0f, translate,
+            0f, 0f, contrast, 0f, translate,
+            0f, 0f, 0f, 1f, 0f
+        ))
+
+        val finalMatrix = android.graphics.ColorMatrix()
+        finalMatrix.setConcat(contrastMatrix, grayMatrix)
+
+        paint.colorFilter = android.graphics.ColorMatrixColorFilter(finalMatrix)
+        canvas.drawBitmap(original, 0f, 0f, paint)
+
+        return resultBitmap
     }
 
     /**
