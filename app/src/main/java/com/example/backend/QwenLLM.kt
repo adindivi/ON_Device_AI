@@ -176,6 +176,42 @@ class QwenLLM(private val context: android.content.Context, private val modelFil
         }
     }
 
+    fun generateRootCauseGraph(query: String, contextDocs: List<SearchResult>): Flow<String> {
+        val chatPrompt = "<|im_start|>system\n" +
+                "당신은 차량 정비 현장 지침을 분석하여 다중 고장 코드의 근본 원인을 파악하는 AI입니다.\n" +
+                "아래 규칙을 엄격히 준수하십시오:\n" +
+                "1. 절대 서론이나 맺음말, 사고 과정(think)을 출력하지 마십시오.\n" +
+                "2. 반드시 순수한 JSON 형식으로만 응답하십시오.\n" +
+                "3. JSON의 키(Key)와 문자열 값(Value)에는 반드시 큰따옴표(\"\")를 사용해야 합니다. (작은따옴표 '' 절대 금지)\n" +
+                "4. 토큰(글자 수) 낭비를 막기 위해 한국어 설명은 절대 작성하지 마십시오. 오직 영문 부품명과 DTC 코드만 사용하십시오.\n" +
+                "5. JSON 형식은 다음과 같아야 합니다: {\"root_cause\": \"핵심 부품(영문)\", \"symptoms\": [\"DTC코드1\", \"DTC코드2\"], \"edges\": [{\"from\": \"root\", \"to\": \"DTC코드1\", \"description\": \"Link\"}]}\n<|im_end|>\n" +
+                "<|im_start|>user\n" +
+                "<context>\n" +
+                "- 입력 증상 및 코드: $query\n" +
+                "</context>\n" +
+                "<instruction>\n" +
+                "위 <context>를 바탕으로 연쇄 고장 트리를 JSON으로 작성하십시오.\n" +
+                "</instruction><|im_end|>\n" +
+                "<|im_start|>assistant\n<think>\n</think>\n{"
+
+        return flow {
+            if (!llamaBridge.isLoaded) {
+                Log.w("QwenLLM", "Qwen LLM engine not loaded yet (isLoaded=false). Displaying guidance message.")
+                emit("💡 스마트 AI 답변 모델이 아직 준비중입니다!")
+                return@flow
+            }
+            emit("[JSON_GRAPH_START]\n{")
+            try {
+                llamaBridge.streamInference(chatPrompt).collect { token ->
+                    emit(token)
+                }
+            } catch (e: Exception) {
+                Log.e("QwenLLM", "LLM inference error during graph generation: ${e.message}", e)
+                emit("\n\n💡 스마트 AI 답변 모델이 아직 준비중입니다!")
+            }
+        }
+    }
+
     fun release() {
         llamaBridge.close()
     }

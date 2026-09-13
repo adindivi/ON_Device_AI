@@ -375,15 +375,24 @@ fun DiagnosisScreen(
                                         )
                                     }
                                     Spacer(modifier = Modifier.height(6.dp))
-                                    TypingText(
-                                        fullText = result.solutionText,
-                                        style = TextStyle(
-                                            fontSize = (12 * textSizeScale).sp,
-                                            color = Color(0xFF1E3A8A),
-                                            lineHeight = 18.sp,
-                                            fontWeight = FontWeight.Medium
+                                    var fallbackToText by remember { mutableStateOf(false) }
+                                    if (result.solutionText.startsWith("[JSON_GRAPH_START]") && !fallbackToText) {
+                                        com.example.ui.components.RootCauseGraphView(
+                                            jsonGraphString = result.solutionText,
+                                            onFallback = { fallbackToText = true }
                                         )
-                                    )
+                                    } else {
+                                        val displayStr = result.solutionText.removePrefix("[JSON_GRAPH_START]").trim()
+                                        TypingText(
+                                            fullText = displayStr,
+                                            style = TextStyle(
+                                                fontSize = (12 * textSizeScale).sp,
+                                                color = Color(0xFF1E3A8A),
+                                                lineHeight = 18.sp,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        )
+                                    }
                                 }
                             }
                         }

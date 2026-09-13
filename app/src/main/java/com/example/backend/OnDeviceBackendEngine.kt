@@ -322,9 +322,10 @@ class OnDeviceBackendEngine(private val context: Context) {
         val matches = ragSearcher.search(query, topK = 10, weights = weights)
         var fullAnswer = ""
 
+        val isIsoRoot = query.startsWith("ISO-ROOT: ")
+        
         // [ISO 14229 UDS 다중 고장코드 근본 원인 분석 모드]
-        // 사용자가 다중 DTC 통합 진단을 선택했을 때, 단순 개별 조치가 아닌 연관 부품의 공통 원인(Root Cause)을 도출하도록 프롬프트 구성
-        val finalQuery = if (query.startsWith("ISO-ROOT: ")) {
+        val finalQuery = if (isIsoRoot) {
             val codes = query.removePrefix("ISO-ROOT: ")
             "다음 다중 고장 코드(DTC)들에 대해 ISO 14229 UDS 표준 기반으로 '근본 원인(Root Cause)'을 추적해줘. 여러 경고등의 공통된 뿌리가 되는 가장 의심되는 부품 1개를 지목하고, 그 이유를 정비사에게 설명해줘.\n코드 목록: $codes"
         } else {
@@ -332,7 +333,13 @@ class OnDeviceBackendEngine(private val context: Context) {
         }
 
         return flow {
-            qwenLlm.generateAnswerStream(finalQuery, matches).collect { token ->
+            val stream = if (isIsoRoot) {
+                qwenLlm.generateRootCauseGraph(finalQuery, matches)
+            } else {
+                qwenLlm.generateAnswerStream(finalQuery, matches)
+            }
+
+            stream.collect { token ->
                 fullAnswer += token
                 emit(DiagnosisBackendResponse(qwenAnswer = fullAnswer, rawMatches = matches))
             }
