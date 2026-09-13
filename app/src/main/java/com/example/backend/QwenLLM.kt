@@ -167,7 +167,13 @@ class QwenLLM(private val context: android.content.Context, private val modelFil
             emit(personaResponse + "\n\n📝 AI 현장 점검 3단계:\n" + assistantPrefix)
             try {
                 llamaBridge.streamInference(chatPrompt).collect { token ->
-                    emit(token)
+                    val cleanToken = token.replace("<|im_end|>", "").replace("<|endoftext|>", "")
+                    if (cleanToken.isNotEmpty()) {
+                        emit(cleanToken)
+                    }
+                    if (token.contains("<|im_end|>") || token.contains("<|endoftext|>")) {
+                        llamaBridge.stopInference()
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("QwenLLM", "LLM inference error: ${e.message}", e)
@@ -203,7 +209,13 @@ class QwenLLM(private val context: android.content.Context, private val modelFil
             emit("[JSON_GRAPH_START]\n{")
             try {
                 llamaBridge.streamInference(chatPrompt).collect { token ->
-                    emit(token)
+                    val cleanToken = token.replace("<|im_end|>", "").replace("<|endoftext|>", "")
+                    if (cleanToken.isNotEmpty()) {
+                        emit(cleanToken)
+                    }
+                    if (token.contains("<|im_end|>") || token.contains("<|endoftext|>")) {
+                        llamaBridge.stopInference()
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("QwenLLM", "LLM inference error during graph generation: ${e.message}", e)
