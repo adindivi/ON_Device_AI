@@ -282,7 +282,7 @@ fun RecommendationCard(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.List,
+                        imageVector = Icons.Filled.List,
                         contentDescription = null,
                         tint = TossGray400,
                         modifier = Modifier.size(13.dp)

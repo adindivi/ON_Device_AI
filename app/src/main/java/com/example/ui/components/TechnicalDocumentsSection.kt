@@ -48,7 +48,7 @@ Column {
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.MenuBook,
+                            imageVector = Icons.Filled.MenuBook,
                             contentDescription = "Docs",
                             tint = Color.White,
                             modifier = Modifier.size(14.dp)

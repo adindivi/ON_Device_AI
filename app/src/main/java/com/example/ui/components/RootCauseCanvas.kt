@@ -167,7 +167,7 @@ fun RootCauseGraphView(
 
                     val path = Path().apply {
                         moveTo(rootPos.x, rootPos.y + 20f.dp.toPx())
-                        quadraticBezierTo(
+                        quadraticTo(
                             rootPos.x, sympPos.y - 40f.dp.toPx(),
                             sympPos.x, sympPos.y - 20f.dp.toPx()
                         )

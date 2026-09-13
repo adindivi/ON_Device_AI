@@ -158,6 +158,7 @@ fun CameraXLiveScanner(
  * - CameraX의 기본 YUV_420_888 프레임을 NV21 바이트 배열로 조립 후 JPEG 압축을 거쳐 Bitmap으로 변환.
  * - 센서 회전 각도(rotationDegrees)를 적용하여 정방향 비트맵을 반환합니다.
  */
+@androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
 fun ImageProxy.toBitmapSafely(): Bitmap? {
     val image = this.image ?: return null
     if (image.format != ImageFormat.YUV_420_888) return null
