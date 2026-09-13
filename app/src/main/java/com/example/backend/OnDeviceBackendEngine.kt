@@ -40,6 +40,10 @@ data class AddDocumentBackendResponse(
 )
 
 class OnDeviceBackendEngine(private val context: Context) {
+    fun release() {
+        qwenLlm.release()
+    }
+
 
     val dbDirectory: File
     val docsDirectory: File

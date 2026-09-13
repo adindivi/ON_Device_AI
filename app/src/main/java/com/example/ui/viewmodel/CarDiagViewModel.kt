@@ -49,6 +49,12 @@ data class ErrorDialogState(
 
 class CarDiagViewModel(application: Application) : AndroidViewModel(application) {
 
+    override fun onCleared() {
+        super.onCleared()
+        backendEngine.release()
+    }
+
+
     private val repository: CarDiagRepository
     val backendEngine: OnDeviceBackendEngine = OnDeviceBackendEngine(application)
 
