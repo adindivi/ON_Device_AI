@@ -34,7 +34,24 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -72,9 +89,9 @@ fun ContributionDashboardDialog(
 
     // [추천 3] 기여 건수 강조형 배지 등급 설정
     val (gradeTag, gradeColor) = when {
-        count >= 10 -> "🥇 마스터 (기여 ${count}건)" to Color(0xFFD97706)
-        count >= 5 -> "🥈 실버 (기여 ${count}건)" to Color(0xFF475569)
-        else -> "🥉 브론즈 (기여 ${count}건)" to Color(0xFFB45309)
+        count >= 10 -> "🥇 마스터 정비사 (기여 ${count}건)" to Color(0xFFD97706)
+        count >= 5 -> "🥈 전문 정비사 (기여 ${count}건)" to Color(0xFF475569)
+        else -> "🥉 초급 정비사 (기여 ${count}건)" to Color(0xFFB45309)
     }
 
     val progressFraction = (count / 10f).coerceIn(0f, 1f)
@@ -83,14 +100,22 @@ fun ContributionDashboardDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Surface(
+        val visibleState = remember { MutableTransitionState(false).apply { targetState = true } }
+        AnimatedVisibility(
+            visibleState = visibleState,
+            enter = slideInVertically(spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow)) { it } + fadeIn(),
             modifier = Modifier
                 .fillMaxWidth(0.92f)
                 .fillMaxHeight(0.85f)
-                .testTag("dialog_contribution_dashboard"),
-            shape = RoundedCornerShape(20.dp),
-            color = TossWhite
         ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+                    .testTag("dialog_contribution_dashboard"),
+                shape = RoundedCornerShape(20.dp),
+                color = TossWhite
+            ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -220,7 +245,38 @@ fun ContributionDashboardDialog(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text("초급 정비사", fontSize = 10.sp, color = TossGray400)
-                            Text("마스터 (10건)", fontSize = 10.sp, color = TossGray400)
+                            Text("마스터 정비사 (10건)", fontSize = 10.sp, color = TossGray400)
+                        }
+                        
+                        Spacer(modifier = Modifier.height(14.dp))
+                        
+                        val context = LocalContext.current
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(TossBlack)
+                                .bounceClick {
+                                    val exportText = userDocuments.joinToString("\n\n") { doc ->
+                                        "{\n  \"doc_code\": \"${doc.docCode}\",\n  \"dtc_code\": \"${doc.dtcCode ?: ""}\",\n  \"component\": \"${doc.component ?: ""}\",\n  \"connector_location\": \"${doc.connectorLocation ?: ""}\",\n  \"fullContent\": \"${doc.fullContent.replace("\n", " ")}\"\n}"
+                                    }
+                                    val sendIntent = Intent().apply {
+                                        action = Intent.ACTION_SEND
+                                        putExtra(Intent.EXTRA_TEXT, "--- 공식 DB 제보 데이터 ---\n$exportText")
+                                        type = "text/plain"
+                                    }
+                                    val shareIntent = Intent.createChooser(sendIntent, "공식 DB에 기여 내역 제보하기")
+                                    context.startActivity(shareIntent)
+                                }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "내 노하우 전체 공유",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TossWhite
+                            )
                         }
                     }
                 }
@@ -246,7 +302,7 @@ fun ContributionDashboardDialog(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .background(TossBlack)
-                            .clickable {
+                            .bounceClick {
                                 onDismiss()
                                 onOpenAddRemedy()
                             }
@@ -370,11 +426,36 @@ fun ContributionDashboardDialog(
                                         }
 
                                         Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                                            IconButton(
-                                                onClick = { onEditDocument(doc) },
+                                            val context = LocalContext.current
+                                            Box(
                                                 modifier = Modifier
                                                     .size(28.dp)
-                                                    .testTag("btn_dialog_edit_doc_${doc.id}")
+                                                    .bounceClick {
+                                                        val shareText = "💡 [$gradeTag]의 수리 노하우\n- 고장코드: ${doc.dtcCode ?: "없음"}\n- 관련부품: ${doc.component ?: "없음"}\n- 해결방안: ${doc.fullContent}"
+                                                        val sendIntent = Intent().apply {
+                                                            action = Intent.ACTION_SEND
+                                                            putExtra(Intent.EXTRA_TEXT, shareText)
+                                                            type = "text/plain"
+                                                        }
+                                                        val shareIntent = Intent.createChooser(sendIntent, "노하우 공유하기")
+                                                        context.startActivity(shareIntent)
+                                                    },
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Share,
+                                                    contentDescription = "Share",
+                                                    tint = TossGray600,
+                                                    modifier = Modifier.size(15.dp)
+                                                )
+                                            }
+
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(28.dp)
+                                                    .bounceClick { onEditDocument(doc) }
+                                                    .testTag("btn_dialog_edit_doc_${doc.id}"),
+                                                contentAlignment = Alignment.Center
                                             ) {
                                                 Icon(
                                                     imageVector = Icons.Default.Edit,
@@ -384,11 +465,12 @@ fun ContributionDashboardDialog(
                                                 )
                                             }
 
-                                            IconButton(
-                                                onClick = { onDeleteDocument(doc.id) },
+                                            Box(
                                                 modifier = Modifier
                                                     .size(28.dp)
-                                                    .testTag("btn_dialog_delete_doc_${doc.id}")
+                                                    .bounceClick { onDeleteDocument(doc.id) }
+                                                    .testTag("btn_dialog_delete_doc_${doc.id}"),
+                                                contentAlignment = Alignment.Center
                                             ) {
                                                 Icon(
                                                     imageVector = Icons.Default.Delete,
@@ -426,4 +508,35 @@ fun ContributionDashboardDialog(
             }
         }
     }
+    }
+}
+
+/**
+ * 토스/삼성 스타일 마이크로 인터랙션 (터치 시 95% 축소되는 바운스 효과)
+ */
+fun Modifier.bounceClick(onClick: () -> Unit): Modifier = composed {
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1.0f,
+        animationSpec = spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+        label = "bounceClick"
+    )
+
+    this
+        .graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        }
+        .pointerInput(Unit) {
+            detectTapGestures(
+                onPress = {
+                    isPressed = true
+                    tryAwaitRelease()
+                    isPressed = false
+                },
+                onTap = {
+                    onClick()
+                }
+            )
+        }
 }

@@ -64,10 +64,12 @@ import com.example.ui.theme.TossWhite
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ExperimentalFoundationApi
 
 /**
  * 데이터 관리 화면 — Toss B&W 모바일 UI 최적화 버전 (기여 건수 강조형 배지 적용)
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ContributionSettingsScreen(
     userDocuments: List<RagDocument>,
@@ -117,38 +119,47 @@ fun ContributionSettingsScreen(
             .background(TossWhite)
             .padding(16.dp)
     ) {
-        // ── 상단 타이틀 ───────────────────────────────────────────────────────
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(26.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(TossBlack),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Storage,
-                    contentDescription = "Data Management",
-                    tint = TossWhite,
-                    modifier = Modifier.size(14.dp)
-                )
+            // ── Sticky Header ────────────────────────────────────────
+            stickyHeader {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(TossWhite)
+                        .padding(bottom = 14.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                    Box(
+                        modifier = Modifier
+                            .size(26.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(TossBlack),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Storage,
+                            contentDescription = "Data Management",
+                            tint = TossWhite,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                    Text(
+                        text = "데이터 및 AI 보관함",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = TossBlack,
+                            fontSize = 16.sp
+                        )
+                    )
+                    }
+                }
             }
-            Text(
-                text = "데이터 및 AI 보관함",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = TossBlack,
-                    fontSize = 16.sp
-                )
-            )
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             // ── 1. 스마트폰 내장 DB 백엔드 연결 상태 카드 ─────────────────────
             backendStatus?.let { status ->
                 item {

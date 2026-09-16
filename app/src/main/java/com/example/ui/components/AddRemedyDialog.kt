@@ -57,18 +57,23 @@ fun AddRemedyDialog(
     var hasExtracted by remember { mutableStateOf(false) }
 
     Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp)),
-            color = Color.White
+        val visibleState = remember { androidx.compose.animation.core.MutableTransitionState(false).apply { targetState = true } }
+        androidx.compose.animation.AnimatedVisibility(
+            visibleState = visibleState,
+            enter = androidx.compose.animation.slideInVertically(androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow)) { it } + androidx.compose.animation.fadeIn()
         ) {
-            Column(
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(20.dp)
+                    .clip(RoundedCornerShape(20.dp)),
+                color = Color.White
             ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(20.dp)
+                ) {
                 // Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -288,6 +293,7 @@ fun AddRemedyDialog(
                     ) {
                         Text("DB에 최종 등록", fontWeight = FontWeight.Bold)
                     }
+                }
                 }
             }
         }

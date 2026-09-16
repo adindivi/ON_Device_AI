@@ -55,18 +55,23 @@ fun EditRemedyDialog(
     var location by remember { mutableStateOf(doc.connectorLocation ?: "") }
 
     Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp)),
-            color = Color.White
+        val visibleState = remember { androidx.compose.animation.core.MutableTransitionState(false).apply { targetState = true } }
+        androidx.compose.animation.AnimatedVisibility(
+            visibleState = visibleState,
+            enter = androidx.compose.animation.slideInVertically(androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow)) { it } + androidx.compose.animation.fadeIn()
         ) {
-            Column(
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(20.dp)
+                    .clip(RoundedCornerShape(20.dp)),
+                color = Color.White
             ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(20.dp)
+                ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -221,6 +226,7 @@ fun EditRemedyDialog(
                     ) {
                         Text("수정 완료", fontWeight = FontWeight.Bold)
                     }
+                }
                 }
             }
         }
