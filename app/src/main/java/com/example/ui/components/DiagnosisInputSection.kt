@@ -382,18 +382,23 @@ fun DiagnosisInputSection(
                 )
             ) {
                 if (isDiagnosing) {
-                    StairsBallLoader(
-                        modifier = Modifier.size(width = 36.dp, height = 24.dp),
-                        barColor = Color.White.copy(alpha = 0.85f),
-                        ballColor = Color(0xFF2C8FFF)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        "AI 진단 추론 중...",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = (15 * textSizeScale).sp,
-                        color = Color.White
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            "AI 진단 추론 중...",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = (15 * textSizeScale).sp,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        StairsBallLoader(
+                            modifier = Modifier.size(width = 30.dp, height = 22.dp),
+                            barColor = Color.White.copy(alpha = 0.9f),
+                            ballColor = Color(0xFF2C8FFF)
+                        )
+                    }
                 } else {
                     Icon(
                         imageVector = Icons.Default.AutoAwesome,

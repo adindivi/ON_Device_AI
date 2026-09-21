@@ -92,7 +92,7 @@ private fun interpolateBallPosition(t: Float): Pair<Float, Float> {
 
 @Composable
 fun StairsBallLoader(
-    modifier: Modifier = Modifier.size(width = 36.dp, height = 24.dp),
+    modifier: Modifier = Modifier.size(width = 30.dp, height = 22.dp),
     barColor: Color = Color.White.copy(alpha = 0.85f),
     ballColor: Color = Color(0xFF2C8FFF), // #2C8FFF (Uiverse 원본 블루)
     durationMillis: Int = 3600
@@ -108,15 +108,15 @@ fun StairsBallLoader(
     )
 
     Canvas(modifier = modifier) {
-        // 기준 디자인 좌표계: 너비 70px, 높이 65px (바 바닥은 y=65)
+        // 기준 디자인 좌표계: 너비 70px, 높이 64px (정밀 중앙 정렬)
         val designWidth = 70f
-        val designHeight = 65f
+        val designHeight = 64f
         val scale = min(size.width / designWidth, size.height / designHeight)
 
         val offsetX = (size.width - designWidth * scale) / 2f
         val offsetY = (size.height - designHeight * scale) / 2f
 
-        val baseY = designHeight * scale + offsetY
+        val baseY = offsetY + designHeight * scale
         val maxBarHeight = 50f * scale
         val barWidth = 10f * scale
         val barStepX = 15f * scale
