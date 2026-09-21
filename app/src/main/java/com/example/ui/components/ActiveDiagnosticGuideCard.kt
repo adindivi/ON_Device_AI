@@ -182,23 +182,86 @@ Card(
                                         )
                                     }
                                     Spacer(modifier = Modifier.height(6.dp))
+                                    val causeRegex = remember { Regex("""^(\d+순위)\((.*?)\):\s*(.*)$""") }
                                     result.checksListJson.split("|").forEach { cause ->
-                                        if (cause.isNotBlank()) {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                modifier = Modifier.padding(vertical = 2.dp)
-                                            ) {
-                                                Text(
-                                                    text = "• ",
-                                                    color = Color(0xFF004AC6),
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                                Text(
-                                                    text = cause,
-                                                    fontSize = (12 * textSizeScale).sp,
-                                                    color = Color(0xFF334155),
-                                                    fontWeight = FontWeight.Medium
-                                                )
+                                        val trimmed = cause.trim()
+                                        if (trimmed.isNotBlank()) {
+                                            val match = causeRegex.find(trimmed)
+                                            if (match != null) {
+                                                val (rank, component, detail) = match.destructured
+                                                Column(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(vertical = 4.dp)
+                                                ) {
+                                                    // 1행: [순위 뱃지] + 부품명
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                    ) {
+                                                        Surface(
+                                                            shape = RoundedCornerShape(50.dp),
+                                                            color = Color(0xFFF1F5F9),
+                                                            border = BorderStroke(1.dp, Color(0xFFCBD5E1))
+                                                        ) {
+                                                            Text(
+                                                                text = rank,
+                                                                fontSize = 10.5.sp,
+                                                                fontWeight = FontWeight.Bold,
+                                                                color = Color(0xFF0F172A),
+                                                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                                                            )
+                                                        }
+                                                        Text(
+                                                            text = component,
+                                                            fontSize = (12.5 * textSizeScale).sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = Color(0xFF1E293B)
+                                                        )
+                                                    }
+
+                                                    Spacer(modifier = Modifier.height(3.dp))
+
+                                                    // 2행: 점검 조치 가이드 내용
+                                                    Row(
+                                                        verticalAlignment = Alignment.Top,
+                                                        modifier = Modifier.padding(start = 4.dp)
+                                                    ) {
+                                                        Text(
+                                                            text = "• ",
+                                                            color = Color(0xFF64748B),
+                                                            fontWeight = FontWeight.Bold,
+                                                            fontSize = (12 * textSizeScale).sp
+                                                        )
+                                                        Text(
+                                                            text = detail,
+                                                            fontSize = (12 * textSizeScale).sp,
+                                                            color = Color(0xFF475569),
+                                                            fontWeight = FontWeight.Medium,
+                                                            lineHeight = (17 * textSizeScale).sp
+                                                        )
+                                                    }
+                                                }
+                                            } else {
+                                                // Fallback: 일반 텍스트 (Alignment.Top으로 불릿 붕뜸 방지)
+                                                Row(
+                                                    verticalAlignment = Alignment.Top,
+                                                    modifier = Modifier.padding(vertical = 2.dp)
+                                                ) {
+                                                    Text(
+                                                        text = "• ",
+                                                        color = Color(0xFF004AC6),
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = (12 * textSizeScale).sp
+                                                    )
+                                                    Text(
+                                                        text = trimmed,
+                                                        fontSize = (12 * textSizeScale).sp,
+                                                        color = Color(0xFF334155),
+                                                        fontWeight = FontWeight.Medium,
+                                                        lineHeight = (17 * textSizeScale).sp
+                                                    )
+                                                }
                                             }
                                         }
                                     }
