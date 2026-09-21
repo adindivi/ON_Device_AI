@@ -133,23 +133,14 @@ fun DetailReportDialog(
                             .padding(14.dp)
                     ) {
                         Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Build,
-                                    contentDescription = "Checkpoints",
-                                    tint = Color(0xFF191F28),
-                                    modifier = Modifier.size(16.dp)
+                            Text(
+                                text = "점검 우선순위 [Checkpoints]",
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF191F28),
+                                    fontSize = 13.sp
                                 )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "점검 우선순위 (Checkpoints)",
-                                    style = MaterialTheme.typography.labelMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF191F28),
-                                        fontSize = 13.sp
-                                    )
-                                )
-                            }
+                            )
                             Spacer(modifier = Modifier.height(8.dp))
                             checksList.forEach { checkItem ->
                                 Row(
@@ -191,23 +182,14 @@ fun DetailReportDialog(
                             .padding(14.dp)
                     ) {
                         Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Lightbulb,
-                                    contentDescription = "Advice",
-                                    tint = Color(0xFF191F28),
-                                    modifier = Modifier.size(16.dp)
+                            Text(
+                                text = "정비 조치 가이드 [Repair Advice]",
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF191F28),
+                                    fontSize = 13.sp
                                 )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "정비 조치 가이드 (Repair Advice)",
-                                    style = MaterialTheme.typography.labelMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF191F28),
-                                        fontSize = 13.sp
-                                    )
-                                )
-                            }
+                            )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = adviceText,

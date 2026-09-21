@@ -37,6 +37,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -104,11 +105,11 @@ fun ContributionSettingsScreen(
         }
     }
 
-    // 애플식 기여도 등급 배지 설정
+    // 기여도 등급 배지 설정 (프로페셔널 클린 텍스트)
     val (gradeTag, gradeColor) = when {
-        count >= 10 -> "🥇 명장 정비사 (${count}건)" to Color(0xFFD97706)
-        count >= 5 -> "🥈 든든한 해결사 (${count}건)" to Color(0xFF475569)
-        else -> "🥉 시작하는 정비사 (${count}건)" to Color(0xFFB45309)
+        count >= 10 -> "마스터 정비사 (${count}건)" to Color(0xFFD97706)
+        count >= 5 -> "전문 정비사 (${count}건)" to Color(0xFF475569)
+        else -> "초급 정비사 (${count}건)" to Color(0xFFB45309)
     }
 
     val progressFraction = (count / 10f).coerceIn(0f, 1f)
@@ -233,7 +234,7 @@ fun ContributionSettingsScreen(
                             ) {
                                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                     Text(
-                                        text = "📁 기기 내 AI 엔진 구성",
+                                        text = "기기 내 AI 엔진 구성",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF38BDF8)
@@ -336,7 +337,7 @@ fun ContributionSettingsScreen(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "✨ AI 종합 진단서 작성",
+                                        text = "AI 종합 진단서 작성",
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White
@@ -396,16 +397,15 @@ fun ContributionSettingsScreen(
                                 )
                             }
 
-                            // 모바일 핏 컴팩트 배지
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(TossGray100)
-                                    .border(1.dp, TossGray200, RoundedCornerShape(8.dp))
-                                    .padding(horizontal = 9.dp, vertical = 5.dp)
+                            // 모바일 핏 클린 화이트 캡슐 배지
+                            Surface(
+                                shape = RoundedCornerShape(50.dp),
+                                color = Color.White,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, TossGray200)
                             ) {
                                 Text(
                                     text = gradeTag,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                                     fontSize = 11.5.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = gradeColor

@@ -162,14 +162,14 @@ fun RecommendationCard(
                 ) {
                     // DTC code monochrome badge (if present)
                     if (dtcCode != null) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(Color(0xFFF1F5F9))
-                                .padding(horizontal = 7.dp, vertical = 3.dp)
+                        Surface(
+                            shape = RoundedCornerShape(50.dp),
+                            color = Color(0xFFF1F5F9),
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0))
                         ) {
                             Text(
                                 text = dtcCode,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.5.dp),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF1E293B)
@@ -230,7 +230,7 @@ fun RecommendationCard(
             ) {
                 Column {
                     Text(
-                        text = "• 점검 조치",
+                        text = "점검 조치 가이드",
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF004AC6),
@@ -252,14 +252,21 @@ fun RecommendationCard(
             // ── Connector location ─────────────────────────────────────────────
             if (connLoc != null) {
                 Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "🔌 커넥터 위치: $connLoc",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = Color(0xFF0284C7),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp
+                Surface(
+                    shape = RoundedCornerShape(50.dp),
+                    color = Color(0xFFF0F9FF),
+                    border = BorderStroke(1.dp, Color(0xFFBAE6FD))
+                ) {
+                    Text(
+                        text = "커넥터: $connLoc",
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.5.dp),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = Color(0xFF0284C7),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 10.5.sp
+                        )
                     )
-                )
+                }
             }
 
             Spacer(modifier = Modifier.height(10.dp))

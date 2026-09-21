@@ -429,7 +429,8 @@ private fun QuickChip(
             .clickable { onClick() }
             .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier),
         shape = RoundedCornerShape(50.dp),
-        color = bgColor
+        color = bgColor,
+        border = androidx.compose.foundation.BorderStroke(1.dp, TossGray200)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
