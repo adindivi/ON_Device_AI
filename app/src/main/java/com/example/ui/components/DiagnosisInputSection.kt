@@ -377,21 +377,22 @@ fun DiagnosisInputSection(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF000000),
                     contentColor = TossWhite,
-                    disabledContainerColor = TossGray200,
-                    disabledContentColor = TossGray500
+                    disabledContainerColor = if (isDiagnosing) Color(0xFF000000) else TossGray200,
+                    disabledContentColor = if (isDiagnosing) TossWhite else TossGray500
                 )
             ) {
                 if (isDiagnosing) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = TossWhite,
-                        strokeWidth = 2.dp
+                    StairsBallLoader(
+                        modifier = Modifier.size(width = 36.dp, height = 24.dp),
+                        barColor = Color.White.copy(alpha = 0.85f),
+                        ballColor = Color(0xFF2C8FFF)
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        "AI 추론 진행 중...",
+                        "AI 진단 추론 중...",
                         fontWeight = FontWeight.Bold,
-                        fontSize = (15 * textSizeScale).sp
+                        fontSize = (15 * textSizeScale).sp,
+                        color = Color.White
                     )
                 } else {
                     Icon(
