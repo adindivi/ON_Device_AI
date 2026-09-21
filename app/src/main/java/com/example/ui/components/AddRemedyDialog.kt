@@ -131,8 +131,9 @@ fun AddRemedyDialog(
                     textStyle = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFF1E293B), fontSize = 13.sp),
                     placeholder = {
                         Text(
-                            text = "정비 노하우를 자유롭게 입력하세요. 온디바이스 AI가 부품명과 고장코드를 자동 감지합니다.",
+                            text = "정비 노하우를 입력해 주세요.\nAI가 부품명과 고장코드를 자동 분석합니다.",
                             fontSize = 12.5.sp,
+                            lineHeight = 18.sp,
                             color = Color(0xFF94A3B8)
                         )
                     },

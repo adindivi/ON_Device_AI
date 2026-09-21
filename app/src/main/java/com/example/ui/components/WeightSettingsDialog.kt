@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -316,19 +317,15 @@ fun WeightSettingsDialog(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 WeightSliderItem(
-                    emoji = "🥇",
-                    number = 1,
-                    title = "DTC 고장코드 매칭 점수",
+                    title = "DTC 고장코드 가중치",
                     value = dtcBoost,
                     valueRange = 0.0f..30.0f,
-                    description = "DTC 고장 코드가 같을 때 최우선 부여되는 점수 (기본 15.0점)",
+                    description = "DTC 고장 코드가 일치할 때 최우선 부여되는 점수 (기본 15.0점)",
                     onValueChange = { dtcBoost = (it * 2).toInt() / 2.0f }
                 )
 
                 WeightSliderItem(
-                    emoji = "🔩",
-                    number = 2,
-                    title = "부품명 직접 매칭 점수",
+                    title = "부품명 매칭 가중치",
                     value = compBoost,
                     valueRange = 0.0f..5.0f,
                     description = "입력 문장에 부품명이 직접 일치할 때 부여 점수 (기본 2.0점)",
@@ -336,9 +333,7 @@ fun WeightSettingsDialog(
                 )
 
                 WeightSliderItem(
-                    emoji = "💬",
-                    number = 3,
-                    title = "증상 단어 일치 점수",
+                    title = "증상 키워드 가중치",
                     value = textBoost,
                     valueRange = 0.0f..2.0f,
                     description = "입력한 증상 키워드 1개당 일치 보너스 (기본 1.0점)",
@@ -346,9 +341,7 @@ fun WeightSettingsDialog(
                 )
 
                 WeightSliderItem(
-                    emoji = "👍",
-                    number = 4,
-                    title = "현장 추천 보너스 점수",
+                    title = "정비사 추천 가산점",
                     value = upvoteScale,
                     valueRange = 0.0f..3.0f,
                     description = "정비사 도움됨 추천 누적 1회당 적용되는 가산점 (기본 1.0점)",
@@ -363,32 +356,18 @@ fun WeightSettingsDialog(
                 Surface(
                     shape = RoundedCornerShape(14.dp),
                     color = Color(0xFFF8FAFC),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(Color(0xFFEEF2FF)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("🧠", fontSize = 13.sp)
-                            }
-                            Text(
-                                text = "트랙 2: 표준 RRF AI 문맥 가중치",
-                                style = MaterialTheme.typography.titleSmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF1E293B),
-                                    fontSize = 13.sp
-                                )
+                        Text(
+                            text = "트랙 2: 표준 RRF AI 문맥 가중치",
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1E293B),
+                                fontSize = 13.sp
                             )
-                        }
+                        )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "최종 순위 산출 시, 키워드(1.0x) 대비 온디바이스 Ko-SBERT AI의 의미 분석을 몇 배로 반영할지 결정합니다.",
@@ -401,8 +380,6 @@ fun WeightSettingsDialog(
                         Spacer(modifier = Modifier.height(6.dp))
 
                         WeightSliderItem(
-                            emoji = "⚡",
-                            number = 5,
                             title = "AI 문맥 종합 반영 배율",
                             value = aiWeight,
                             valueRange = 0.0f..3.0f,
@@ -479,11 +456,9 @@ fun WeightSettingsDialog(
     }
 }
 
-// ── 가중치 슬라이더 항목 컴포넌트 (Toss B&W 스타일) ─────────────────────────────
+// ── 가중치 슬라이더 항목 컴포넌트 (프로페셔널 인스펙터 스타일) ──────────────────────
 @Composable
 private fun WeightSliderItem(
-    emoji: String,
-    number: Int,
     title: String,
     value: Float,
     valueRange: ClosedFloatingPointRange<Float>,
@@ -496,35 +471,35 @@ private fun WeightSliderItem(
             .fillMaxWidth()
             .padding(vertical = 8.dp)
     ) {
-        // ── 제목 행: 번호+제목 / 점수 배지 ─────────────────────────────────────
+        // ── 제목 행: 타이틀 / 정밀 수치 캡슐 배지 ──────────────────────────────────
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "$emoji $number. $title",
+                text = title,
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Bold,
                     color = TossBlack,
                     fontSize = 13.5.sp
                 ),
                 modifier = Modifier.weight(1f)
             )
 
-            // 현재 값 배지 (회색 pill)
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(ValueBadgeBg)
-                    .padding(horizontal = 9.dp, vertical = 3.dp)
+            // 정밀 수치 캡슐 배지 (클린 화이트 미니멀 캡슐)
+            Surface(
+                shape = RoundedCornerShape(50.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, TossGray200)
             ) {
                 Text(
                     text = "${String.format(Locale.getDefault(), "%.1f", value)}$unit",
-                    style = MaterialTheme.typography.bodySmall.copy(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+                    style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Bold,
-                        color = ValueBadgeFg,
-                        fontSize = 12.sp
+                        color = TossBlack,
+                        fontSize = 11.5.sp
                     )
                 )
             }

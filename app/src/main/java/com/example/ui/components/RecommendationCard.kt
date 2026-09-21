@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -72,24 +72,20 @@ fun RecommendationCard(
     modifier: Modifier = Modifier
 ) {
     val rankBadge = when (rankIndex) {
-        0 -> "🥇 우선 점검 항목 1위"
-        1 -> "🥈 우선 점검 항목 2위"
-        else -> "🥉 우선 점검 항목 3위"
+        0 -> "우선 점검 1위"
+        1 -> "우선 점검 2위"
+        else -> "우선 점검 3위"
     }
     val rankColor = when (rankIndex) {
-        0 -> CarRankGold
-        1 -> CarRankSilver
-        else -> CarRankBronze
+        0 -> Color(0xFFB45309)
+        1 -> Color(0xFF475569)
+        else -> Color(0xFF9A3412)
     }
-    val rankBg = when (rankIndex) {
-        0 -> CarRankGoldBg
-        1 -> CarRankSilverBg
-        else -> CarRankBronzeBg
-    }
+    val rankBg = Color.White
     val rankBorder = when (rankIndex) {
-        0 -> CarRankGoldBorder
-        1 -> CarRankSilverBorder
-        else -> CarRankBronzeBorder
+        0 -> Color(0xFFFDE68A)
+        1 -> Color(0xFFCBD5E1)
+        else -> Color(0xFFFDBA74)
     }
 
     val compName = match.metadata.component.ifBlank { "관련 부품" }
@@ -282,7 +278,7 @@ fun RecommendationCard(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.List,
+                        imageVector = Icons.AutoMirrored.Filled.List,
                         contentDescription = null,
                         tint = TossGray400,
                         modifier = Modifier.size(13.dp)
@@ -331,17 +327,17 @@ fun RecommendationCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
-                    shape = RoundedCornerShape(6.dp),
+                    shape = RoundedCornerShape(50.dp),
                     color = rankBg,
                     border = BorderStroke(1.dp, rankBorder)
                 ) {
                     Text(
                         text = rankBadge,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 3.dp),
                         style = MaterialTheme.typography.labelMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = rankColor,
-                            fontSize = 11.sp
+                            fontSize = 10.5.sp
                         )
                     )
                 }
@@ -363,53 +359,30 @@ data class TextStyleWrapper(
 /**
  * 신뢰도 칩 Composable
  * - ONNX 로딩 시에만 표시 (null이면 호출 안 됨)
- * - % 범위별 색상 구분
- * - 카드 로드 시 0 → 실제값 카운트업 애니메이션
+ * - 딥 차콜 캡슐 (50.dp) + 네온 텍스트 미니멀 테크 스타일
  */
 @Composable
 fun ConfidenceChip(confidencePercent: Float) {
-    var displayValue by remember { mutableFloatStateOf(0f) }
-    LaunchedEffect(confidencePercent) {
-        val steps = 20
-        val target = confidencePercent
-        repeat(steps) { i ->
-            displayValue = target * (i + 1) / steps
-            delay(18L)
-        }
-        displayValue = target
-    }
-
-    val (bgColor, borderColor, textColor, label) = when {
-        displayValue >= 90f -> listOf(Color(0xFFDCFCE7), Color(0xFF22C55E), Color(0xFF15803D), "매우 높음")
-        displayValue >= 70f -> listOf(Color(0xFFDBEAFE), Color(0xFF3B82F6), Color(0xFF1D4ED8), "높음")
-        displayValue >= 50f -> listOf(Color(0xFFFEF9C3), Color(0xFFEAB308), Color(0xFF854D0E), "보통")
-        displayValue >= 30f -> listOf(Color(0xFFFFEDD5), Color(0xFFF97316), Color(0xFF9A3412), "낮음")
-        else -> listOf(Color(0xFFFEE2E2), Color(0xFFEF4444), Color(0xFF991B1B), "매우 낮음")
+    val (textColor, borderColor) = when {
+        confidencePercent >= 90f -> Color(0xFF059669) to Color(0xFFA7F3D0) // Emerald
+        confidencePercent >= 70f -> Color(0xFF0284C7) to Color(0xFFBAE6FD) // Blue
+        confidencePercent >= 50f -> Color(0xFFD97706) to Color(0xFFFDE68A) // Amber
+        else -> Color(0xFFDC2626) to Color(0xFFFECACA) // Red
     }
 
     Surface(
-        shape = RoundedCornerShape(5.dp),
-        color = bgColor as Color,
-        border = BorderStroke(1.dp, borderColor as Color)
+        shape = RoundedCornerShape(50.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, borderColor)
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(3.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(5.dp)
-                    .background(borderColor, shape = RoundedCornerShape(50))
+        Text(
+            text = "일치도 ${String.format(java.util.Locale.US, "%.1f", confidencePercent)}%",
+            modifier = Modifier.padding(horizontal = 9.dp, vertical = 3.dp),
+            style = MaterialTheme.typography.labelSmall.copy(
+                color = textColor,
+                fontWeight = FontWeight.Bold,
+                fontSize = 10.5.sp
             )
-            Text(
-                text = "일치도 ${String.format(java.util.Locale.US, "%.1f", displayValue)}%",
-                style = MaterialTheme.typography.labelSmall.copy(
-                    color = textColor as Color,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 10.sp
-                )
-            )
-        }
+        )
     }
 }

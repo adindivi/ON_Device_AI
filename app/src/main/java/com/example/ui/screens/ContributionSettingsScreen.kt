@@ -336,7 +336,7 @@ fun ContributionSettingsScreen(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "🤖 AI 종합 진단서 작성",
+                                        text = "✨ AI 종합 진단서 작성",
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White

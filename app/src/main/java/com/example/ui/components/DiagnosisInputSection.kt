@@ -42,7 +42,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -92,6 +94,7 @@ fun DiagnosisInputSection(
 
             // ── Section Header & 2D/3D AR Launch Buttons ──────────────────────
             val context = LocalContext.current
+            val haptic = LocalHapticFeedback.current
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -357,7 +360,14 @@ fun DiagnosisInputSection(
 
             // ── AI 진단 시작 Button (Pure Black #000000) ────────────────────────
             Button(
-                onClick = onStartDiagnosis,
+                onClick = {
+                    try {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    } catch (e: Exception) {
+                        // 안전한 폴백: 햅틱 미지원 기기에서도 문제없이 동작
+                    }
+                    onStartDiagnosis()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp)
