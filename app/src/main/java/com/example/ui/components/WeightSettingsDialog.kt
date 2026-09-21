@@ -291,17 +291,17 @@ fun WeightSettingsDialog(
                 }
 
                 Spacer(modifier = Modifier.height(6.dp))
-
+                // ── 서브 헤더 / 안내 문구 ─────────────────────────────────────────
                 Text(
-                    text = "슬라이더를 조절하여 하이브리드 RRF 추천 알고리즘 가중치를 커스텀하십시오.",
+                    text = "슬라이더로 추천 가중치를 조절하세요.",
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = TossGray500,
                         fontSize = 12.sp,
                         lineHeight = 17.sp
-                    ),
-                    modifier = Modifier.padding(bottom = 14.dp)
+                    )
                 )
 
+                Spacer(modifier = Modifier.height(14.dp))
                 HorizontalDivider(color = TossGray200, thickness = 1.dp)
                 Spacer(modifier = Modifier.height(14.dp))
 
@@ -320,7 +320,7 @@ fun WeightSettingsDialog(
                     title = "DTC 고장코드 가중치",
                     value = dtcBoost,
                     valueRange = 0.0f..30.0f,
-                    description = "DTC 고장 코드가 일치할 때 최우선 부여되는 점수 (기본 15.0점)",
+                    description = "DTC 코드 일치 시 최우선 부여 (기본 15.0점)",
                     onValueChange = { dtcBoost = (it * 2).toInt() / 2.0f }
                 )
 
@@ -328,7 +328,7 @@ fun WeightSettingsDialog(
                     title = "부품명 매칭 가중치",
                     value = compBoost,
                     valueRange = 0.0f..5.0f,
-                    description = "입력 문장에 부품명이 직접 일치할 때 부여 점수 (기본 2.0점)",
+                    description = "부품명 단어 일치 시 부여 점수 (기본 2.0점)",
                     onValueChange = { compBoost = (it * 10).toInt() / 10.0f }
                 )
 
@@ -336,7 +336,7 @@ fun WeightSettingsDialog(
                     title = "증상 키워드 가중치",
                     value = textBoost,
                     valueRange = 0.0f..2.0f,
-                    description = "입력한 증상 키워드 1개당 일치 보너스 (기본 1.0점)",
+                    description = "증상 키워드 일치 보너스 (기본 1.0점)",
                     onValueChange = { textBoost = (it * 10).toInt() / 10.0f }
                 )
 
@@ -344,7 +344,7 @@ fun WeightSettingsDialog(
                     title = "정비사 추천 가산점",
                     value = upvoteScale,
                     valueRange = 0.0f..3.0f,
-                    description = "정비사 도움됨 추천 누적 1회당 적용되는 가산점 (기본 1.0점)",
+                    description = "정비사 추천 1회당 누적 가산점 (기본 1.0점)",
                     onValueChange = { upvoteScale = (it * 10).toInt() / 10.0f }
                 )
 
@@ -370,7 +370,7 @@ fun WeightSettingsDialog(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "최종 순위 산출 시, 키워드(1.0x) 대비 온디바이스 Ko-SBERT AI의 의미 분석을 몇 배로 반영할지 결정합니다.",
+                            text = "키워드(1.0x) 대비 AI 문맥 분석 반영 배율을 설정합니다.",
                             style = MaterialTheme.typography.bodySmall.copy(
                                 color = TossGray500,
                                 fontSize = 11.sp,
