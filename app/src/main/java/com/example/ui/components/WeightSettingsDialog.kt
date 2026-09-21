@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -516,21 +517,42 @@ private fun WeightSliderItem(
             modifier = Modifier.padding(top = 3.dp)
         )
 
-        // ── 슬라이더 (검정 트랙) ─────────────────────────────────────────────
+        // ── [1안] 토스 & iOS 슬림 라운드 슬라이더 ─────────────────────────────
+        @OptIn(ExperimentalMaterial3Api::class)
         Slider(
             value = value,
             onValueChange = onValueChange,
             valueRange = valueRange,
-            colors = SliderDefaults.colors(
-                thumbColor = SliderActive,
-                activeTrackColor = SliderActive,
-                inactiveTrackColor = SliderInactive,
-                activeTickColor = Color.Transparent,
-                inactiveTickColor = Color.Transparent
-            ),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 2.dp)
+                .padding(top = 4.dp),
+            thumb = {
+                Surface(
+                    modifier = Modifier.size(20.dp),
+                    shape = CircleShape,
+                    color = Color.White,
+                    border = BorderStroke(1.5.dp, Color(0xFFE2E8F0)),
+                    shadowElevation = 3.dp
+                ) {}
+            },
+            track = { _ ->
+                val activeFraction = ((value - valueRange.start) / (valueRange.endInclusive - valueRange.start)).coerceIn(0f, 1f)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(50.dp))
+                        .background(Color(0xFFF1F3F5))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(activeFraction)
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(50.dp))
+                            .background(TossBlack)
+                    )
+                }
+            }
         )
     }
 }
