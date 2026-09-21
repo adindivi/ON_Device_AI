@@ -635,65 +635,9 @@ fun ContributionSettingsScreen(
                 }
             }
 
-            // ── 4. 온디바이스 AI 사양 정보 카드 ───────────────────────────────
+            // ── 하단 여백 ─────────────────────────────────────────────────────
             item {
-                Spacer(modifier = Modifier.height(4.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = TossWhite),
-                    border = androidx.compose.foundation.BorderStroke(1.5.dp, TossOutline)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Settings,
-                                contentDescription = "System Info",
-                                tint = TossBlack,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "온디바이스 시스템 정보",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = TossBlack,
-                                    fontSize = 14.5.sp
-                                )
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text("진단 언어 모델", fontSize = 11.5.sp, color = TossGray500)
-                                Text("Qwen 1.5B (기기 내 독립 구동)", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = TossBlack)
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text("지식 데이터베이스", fontSize = 11.5.sp, color = TossGray500)
-                                Text("기기 내 안전 보관 (Room DB)", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = TossBlack)
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text("인터넷 연결", fontSize = 11.5.sp, color = TossGray500)
-                                Text("연결 없이 즉시 작동", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF16A34A))
-                            }
-                        }
-                    }
-                }
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
