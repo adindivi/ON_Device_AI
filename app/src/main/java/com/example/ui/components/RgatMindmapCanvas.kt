@@ -141,21 +141,26 @@ fun RgatMindmapCanvas(
     )
 
     val density = LocalDensity.current
-    val topMarginPx = with(density) { 46.dp.toPx() }
-    val bottomMarginPx = with(density) { 24.dp.toPx() }
+    val topMarginPx = with(density) { (if (isFullscreen) 66.dp else 52.dp).toPx() }
+    val bottomMarginPx = with(density) { (if (isFullscreen) 102.dp else 44.dp).toPx() }
 
     // 노드별 화면 2D 좌표 계산
-    val nodePositions = remember(canvasSize, visNodes) {
+    val nodePositions = remember(canvasSize, visNodes, topMarginPx, bottomMarginPx) {
         calculateNodePositions(visNodes, canvasSize, topMarginPx, bottomMarginPx)
     }
+
+    val canvasShape = if (isFullscreen) RoundedCornerShape(0.dp) else RoundedCornerShape(14.dp)
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 240.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(canvasShape)
             .background(MindmapTokens.CanvasBg)
-            .border(1.dp, MindmapTokens.CanvasBorder, RoundedCornerShape(14.dp))
+            .then(
+                if (isFullscreen) Modifier
+                else Modifier.border(1.dp, MindmapTokens.CanvasBorder, canvasShape)
+            )
             .onSizeChanged { canvasSize = it }
             .pointerInput(Unit) {
                 detectTransformGestures { _, pan, zoom, _ ->
@@ -287,7 +292,7 @@ private fun MindmapControlButtons(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.padding(end = 12.dp, bottom = 12.dp),
+        modifier = modifier.padding(end = 14.dp, bottom = 14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -446,7 +451,7 @@ private fun MindmapInspectionTooltip(
 ) {
     Box(
         modifier = modifier
-            .padding(start = 10.dp, end = 50.dp, bottom = 10.dp)
+            .padding(start = 14.dp, end = 90.dp, bottom = 14.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(MindmapTokens.CapsuleBg.copy(alpha = 0.95f))
             .border(1.dp, Color(0xFF4E5968), RoundedCornerShape(8.dp))
@@ -522,9 +527,9 @@ private fun calculateNodePositions(
         }
     }
 
-    layoutColumn(level0, width * 0.16f)
-    layoutColumn(level1, width * 0.48f)
-    layoutColumn(level2, width * 0.80f)
+    layoutColumn(level0, width * 0.17f)
+    layoutColumn(level1, width * 0.50f)
+    layoutColumn(level2, width * 0.78f)
 
     return map
 }
