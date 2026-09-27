@@ -144,8 +144,8 @@ fun RgatMindmapCanvas(
     )
 
     val density = LocalDensity.current
-    val topMarginPx = with(density) { (if (isFullscreen) 66.dp else 52.dp).toPx() }
-    val bottomMarginPx = with(density) { (if (isFullscreen) 102.dp else 44.dp).toPx() }
+    val topMarginPx = with(density) { (if (isFullscreen) 66.dp else 46.dp).toPx() }
+    val bottomMarginPx = with(density) { (if (isFullscreen) 102.dp else 50.dp).toPx() }
 
     // 노드별 화면 2D 좌표 계산
     val nodePositions = remember(canvasSize, visNodes, topMarginPx, bottomMarginPx) {
@@ -510,31 +510,31 @@ private fun calculateNodePositions(
         }
         if (count == 2) {
             val centerY = topMarginPx + usableHeight / 2f
-            val span = (usableHeight * 0.26f).coerceAtLeast(34f)
+            val span = (usableHeight * 0.28f).coerceAtLeast(36f)
             map[nodes[0].id] = Offset(x, centerY - span)
             map[nodes[1].id] = Offset(x, centerY + span)
             return
         }
         if (count == 3) {
             val centerY = topMarginPx + usableHeight / 2f
-            val span = (usableHeight * 0.36f).coerceAtLeast(46f)
+            val span = (usableHeight * 0.38f).coerceAtLeast(48f)
             map[nodes[0].id] = Offset(x, centerY - span)
             map[nodes[1].id] = Offset(x, centerY)
             map[nodes[2].id] = Offset(x, centerY + span)
             return
         }
         // count >= 4 (4개 DTC 코드 또는 5개 커넥터 노드 전 구역 균등 분배)
-        val startY = topMarginPx + 14f
-        val endY = height - bottomMarginPx - 14f
+        val startY = topMarginPx + 8f
+        val endY = height - bottomMarginPx - 8f
         val stepY = (endY - startY) / (count - 1)
         nodes.forEachIndexed { idx, node ->
             map[node.id] = Offset(x, startY + idx * stepY)
         }
     }
 
-    layoutColumn(level0, width * 0.17f)
-    layoutColumn(level1, width * 0.50f)
-    layoutColumn(level2, width * 0.78f)
+    layoutColumn(level0, width * 0.16f)
+    layoutColumn(level1, width * 0.49f)
+    layoutColumn(level2, width * 0.81f)
 
     return map
 }

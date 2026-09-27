@@ -168,17 +168,17 @@ fun RootCauseAnalysisDialog(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(20.dp)
+                        .padding(horizontal = 16.dp, vertical = 14.dp)
                 ) {
                     // 1. 헤더 (고급 핀테크 타이틀 바 + 닫기 버튼)
                     DialogHeader(onDismiss = onDismiss)
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     // 2. 분석 대상 DTC 태그 칩
                     DtcChipsSection(inputCodes = result.inputCodes)
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     // 3. 토스 스타일 세그먼트 컨트롤 탭 바 (Rule 3)
                     SegmentedTabControl(
@@ -186,13 +186,13 @@ fun RootCauseAnalysisDialog(
                         onTabSelected = { selectedTab = it }
                     )
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    // 4. 탭별 컨텐츠 영역 (높이 415dp로 확장하여 마인드맵 노드 여유 공간 확보)
+                    // 4. 탭별 컨텐츠 영역 (높이 480dp로 대폭 확장하여 마인드맵 노드 여유 공간 확보)
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(415.dp)
+                            .height(480.dp)
                     ) {
                         when (selectedTab) {
                             0 -> MindmapTabContent(
@@ -205,7 +205,7 @@ fun RootCauseAnalysisDialog(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     // 5. 하단 액션 버튼
                     DialogActionBar(
@@ -533,7 +533,7 @@ private fun MindmapTabContent(
     Column(modifier = Modifier.fillMaxWidth()) {
         if (topCandidate != null) {
             TopCandidateCard(topCandidate = topCandidate)
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
         }
         RgatMindmapCanvas(
             visNodes = result.visNodes,
@@ -634,123 +634,75 @@ private fun DialogActionBar(
 }
 
 /**
- * 최우선 추천 커넥터 요약 카드 (Rule 2 Two-Row Hierarchy 적용)
+ * 최우선 추천 커넥터 슬림 카드 (불필요한 아이콘 제거 및 1행 슬림화로 마인드맵 높이 극대화)
  */
 @Composable
 private fun TopCandidateCard(topCandidate: DtcRgatEngine.RgatConnectorRank) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(containerColor = RgatDialogTokens.SurfaceCard),
         border = BorderStroke(1.dp, RgatDialogTokens.BorderNeutral)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            // 1행: 최우선 추천 태그 + 신뢰도 뱃지 (Rule 2)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 7.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.weight(1f, fill = false),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.weight(1f, fill = false),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = "Verified Top",
-                        tint = RgatDialogTokens.BrandBlue,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(5.dp))
-                    Text(
-                        text = "1순위 최우선 원인 커넥터",
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = RgatDialogTokens.BrandBlue
-                        ),
-                        maxLines = 1,
-                        softWrap = false
-                    )
-                }
-
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(if (topCandidate.verified) RgatDialogTokens.SuccessGreenLight else RgatDialogTokens.BrandBlueLight)
-                        .padding(horizontal = 7.dp, vertical = 2.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(RgatDialogTokens.BrandBlueLight)
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
                 ) {
-                    val scoreText = if (topCandidate.verified) {
-                        "직결 검증 100%"
-                    } else {
-                        "일치율 ${String.format(Locale.US, "%.1f", (topCandidate.finalScore * 100).coerceAtMost(100.0))}%"
-                    }
                     Text(
-                        text = scoreText,
-                        color = if (topCandidate.verified) RgatDialogTokens.SuccessGreen else Color(0xFF1B64DA),
+                        text = "1순위 원인",
+                        color = RgatDialogTokens.BrandBlue,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         softWrap = false
                     )
                 }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = topCandidate.name,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = RgatDialogTokens.TextPrimary
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.width(6.dp))
 
-            // 2행: 커넥터 명칭 (단독 가로행 할당으로 글자 쪼개짐/생략 방지)
-            Text(
-                text = topCandidate.name,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = RgatDialogTokens.TextPrimary
-                ),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // 3행: 부가 위치 및 연계 제어기 정보
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+            val scoreText = if (topCandidate.verified) {
+                "직결 100%"
+            } else {
+                "${String.format(Locale.US, "%.0f", (topCandidate.finalScore * 100).coerceAtMost(100.0))}%"
+            }
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(if (topCandidate.verified) RgatDialogTokens.SuccessGreenLight else RgatDialogTokens.BrandBlueLight)
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
             ) {
-                if (topCandidate.location.isNotBlank()) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = "Location",
-                        tint = RgatDialogTokens.TextTertiary,
-                        modifier = Modifier.size(12.dp)
-                    )
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Text(
-                        text = topCandidate.location,
-                        fontSize = 11.sp,
-                        color = RgatDialogTokens.TextSecondary,
-                        maxLines = 1,
-                        softWrap = false
-                    )
-                }
-                if (topCandidate.location.isNotBlank() && topCandidate.connEcus.isNotEmpty()) {
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "·",
-                        fontSize = 11.sp,
-                        color = RgatDialogTokens.DotDivider,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                }
-                if (topCandidate.connEcus.isNotEmpty()) {
-                    Text(
-                        text = "연계 제어기: ${topCandidate.connEcus.joinToString(", ")}",
-                        fontSize = 11.sp,
-                        color = RgatDialogTokens.TextMuted,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
-                }
+                Text(
+                    text = scoreText,
+                    color = if (topCandidate.verified) RgatDialogTokens.SuccessGreen else Color(0xFF1B64DA),
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    softWrap = false
+                )
             }
         }
     }
