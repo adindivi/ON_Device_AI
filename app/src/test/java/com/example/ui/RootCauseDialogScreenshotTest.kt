@@ -9,7 +9,11 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import com.example.backend.DtcRgatEngine
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Modifier
 import com.example.ui.components.RootCauseAnalysisDialog
+import com.example.ui.screens.DiagnosisScreen
 import com.example.ui.theme.MyApplicationTheme
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -188,5 +192,39 @@ class RootCauseDialogScreenshotTest {
         // 상단 전체화면 닫기 버튼 클릭 -> 기본 다이얼로그 복귀
         composeTestRule.onNodeWithContentDescription("전체화면 닫기").performClick()
         composeTestRule.onNodeWithText("동시 고장 배선 진단").assertIsDisplayed()
+    }
+
+    @Test
+    fun `captureBeforeMindmap_DiagnosisScreen`() {
+        composeTestRule.setContent {
+            MyApplicationTheme {
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    DiagnosisScreen(
+                        dtcInput = "B16C500, B16C600, B186D16, B187C88",
+                        symptomInput = "제어기 통신 불량 및 센서 이상 동시 발생",
+                        isDiagnosing = false,
+                        diagnosisStep = 0,
+                        activeResult = null,
+                        ragDocuments = emptyList(),
+                        activeResultMatches = emptyList(),
+                        isGuideExpanded = false,
+                        textSizeScale = 1.0f,
+                        onDtcChange = {},
+                        onSymptomChange = {},
+                        onAddChip = {},
+                        onStartDiagnosis = {},
+                        onToggleGuide = {},
+                        onOpenScanner = {},
+                        onRecommendDocument = { _, _ -> },
+                        onOpenAddRemedy = {},
+                        onOpenRgatAnalysis = {}
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onRoot().captureRoboImage(
+            filePath = "src/test/screenshots/screen_before_mindmap.png"
+        )
     }
 }
