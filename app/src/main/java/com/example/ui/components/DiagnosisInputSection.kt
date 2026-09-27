@@ -220,7 +220,7 @@ fun DiagnosisInputSection(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "하네스 분석",
+                                text = "마인드맵",
                                 fontSize = (11 * textSizeScale).sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF1B64DA),
