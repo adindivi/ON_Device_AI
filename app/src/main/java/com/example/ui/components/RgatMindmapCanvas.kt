@@ -71,30 +71,29 @@ import kotlin.math.roundToInt
  * 3계층 마인드맵 전용 다크 핀테크 색상 및 레이아웃 토큰
  */
 private object MindmapTokens {
-    val CanvasBg = Color(0xFFF8FAFC)        // 산뜻한 라이트 그레이/화이트 캔버스
-    val CanvasBorder = Color(0xFFE2E8F0)    // 은은하고 깨끗한 테두리
-    val CapsuleBg = Color(0xFFEDF2F7)       // 상단 헤더 태그 캡슐 배경
+    // 1. 기본 분위기 (Apple Reference: Fog Canvas & Subtle Hairline)
+    val CanvasBg = Color(0xFFF5F5F7)        // 애플 시그니처 포그 캔버스 (Fog Gray)
+    val CanvasBorder = Color(0xFFE5E5EA)    // 정제된 헤어라인 테두리 (Apple System Gray 5)
 
-    // 열 타이틀 색상 (라이트 모드 고대비 텍스트)
-    val TitleDtc = Color(0xFF1D4ED8)
-    val TitleEcu = Color(0xFFB45309)
-    val TitleConn = Color(0xFF047857)
+    // 2. 조작/상단 태그 (Apple Reference: Unified Minimal Pill)
+    val CapsuleBg = Color(0xFFFFFFFF)       // 퓨어 화이트 캡슐 배경
+    val CapsuleBorder = Color(0xFFE5E5EA)   // 은은한 헤어라인 테두리
+    val CapsuleText = Color(0xFF1D1D1F)     // 애플 시그니처 포그라운드 텍스트
 
-    // 엣지 관계선 색상 (라이트 배경 시인성 극대화)
-    val EdgeHwMap = Color(0xFF0284C7)     // 직결 검증 (스카이블루)
-    val EdgeHwWire = Color(0xFF2563EB)    // 물리 배선 (토스 로얄 블루)
-    val EdgeAiWire = Color(0xFF7C3AED)    // AI 추론 가상 배선 (바이올렛)
-    val EdgeLogic = Color(0xFF94A3B8)     // 소프트웨어 논리 관계 (슬레이트 그레이)
+    // 3. 배선 연결선 (Apple Reference: 1순위 시그니처 블루 + 일반 배선 연회색 위계)
+    val EdgeTop1Wire = Color(0xFF0071E3)    // 1순위 핵심 배선 (애플 시그니처 블루)
+    val EdgeHwWire = Color(0xFFB0B8C1)      // 일반 물리 배선 (차분한 스틸 쿨 그레이)
+    val EdgeLogic = Color(0xFFD2D2D7)       // 소프트웨어 논리 관계 (애플 라이트 그레이)
 
     // 선택 하이라이트
-    val SelectedBorder = Color(0xFFF59E0B) // 골드 앰버
+    val SelectedBorder = Color(0xFF0071E3)  // 애플 블루
 
-    // 노드 스타일 사양 (라이트 카드 테마)
+    // 노드 스타일 사양 (기존 유지, 1순위는 Apple Blue #0071E3로 시각적 통일)
     data class NodeStyle(val bg: Color, val border: Color, val text: Color)
 
     fun resolveNodeStyle(node: DtcRgatEngine.RgatVisNode): NodeStyle = when {
-        // 1위 최우선 원인 커넥터: 선명한 토스 블루 솔리드 카드
-        node.group == "conn_top1" -> NodeStyle(Color(0xFF3182F6), Color(0xFF1D4ED8), Color.White)
+        // 1위 최우선 원인 커넥터: 선명한 애플 블루 솔리드 카드
+        node.group == "conn_top1" -> NodeStyle(Color(0xFF0071E3), Color(0xFF0056B3), Color.White)
         // 기타 추천 커넥터: 산뜻한 민트/에메랄드 카드
         node.group == "conn_top" || node.level == 2 -> NodeStyle(Color(0xFFF0FDF4), Color(0xFF86EFAC), Color(0xFF166534))
         // 제어기 (ECU): 부드러운 웜 앰버 카드
@@ -130,6 +129,8 @@ fun RgatMindmapCanvas(
     var offset by remember { mutableStateOf(Offset.Zero) }
     var canvasSize by remember { mutableStateOf(IntSize(800, 600)) }
     var selectedNode by remember { mutableStateOf<DtcRgatEngine.RgatVisNode?>(null) }
+
+    val top1NodeId = remember(visNodes) { visNodes.find { it.group == "conn_top1" }?.id }
 
     // 1위 추천 커넥터 펄스 애니메이션 (토스 블루 글로우)
     val infiniteTransition = rememberInfiniteTransition(label = "pulse_top1")
@@ -193,7 +194,8 @@ fun RgatMindmapCanvas(
             // (1) 베지어 곡선 연결선 레이어
             MindmapEdgesCanvas(
                 visEdges = visEdges,
-                nodePositions = nodePositions
+                nodePositions = nodePositions,
+                top1NodeId = top1NodeId
             )
 
             // (2) 노드 뱃지 오버레이 레이어
@@ -262,25 +264,26 @@ private fun MindmapColumnHeader() {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        ColumnTitleTag(title = "진단 코드 (DTC)", color = MindmapTokens.TitleDtc)
-        ColumnTitleTag(title = "제어기 (ECU)", color = MindmapTokens.TitleEcu)
-        ColumnTitleTag(title = "하네스 커넥터", color = MindmapTokens.TitleConn)
+        ColumnTitleTag(title = "진단 코드 (DTC)")
+        ColumnTitleTag(title = "제어기 (ECU)")
+        ColumnTitleTag(title = "하네스 커넥터")
     }
 }
 
 @Composable
-private fun ColumnTitleTag(title: String, color: Color) {
+private fun ColumnTitleTag(title: String) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(6.dp))
             .background(MindmapTokens.CapsuleBg)
+            .border(1.dp, MindmapTokens.CapsuleBorder, RoundedCornerShape(6.dp))
             .padding(horizontal = 8.dp, vertical = 3.dp)
     ) {
         Text(
             text = title,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            color = color,
+            fontSize = 10.5.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MindmapTokens.CapsuleText,
             maxLines = 1,
             softWrap = false
         )
@@ -311,7 +314,7 @@ private fun MindmapControlButtons(
             Icon(
                 imageVector = Icons.Default.Refresh,
                 contentDescription = "화면 비율 리셋",
-                tint = Color(0xFF333D4B),
+                tint = Color(0xFF1D1D1F),
                 modifier = Modifier.size(15.dp)
             )
         }
@@ -328,7 +331,7 @@ private fun MindmapControlButtons(
                 Icon(
                     imageVector = if (isFullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
                     contentDescription = if (isFullscreen) "전체화면 종료" else "전체화면",
-                    tint = Color(0xFF333D4B),
+                    tint = Color(0xFF1D1D1F),
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -339,13 +342,27 @@ private fun MindmapControlButtons(
 @Composable
 private fun MindmapEdgesCanvas(
     visEdges: List<DtcRgatEngine.RgatVisEdge>,
-    nodePositions: Map<String, Offset>
+    nodePositions: Map<String, Offset>,
+    top1NodeId: String?
 ) {
+    val (top1Edges, normalEdges) = remember(visEdges, top1NodeId) {
+        visEdges.partition { edge ->
+            edge.to == top1NodeId || edge.from == top1NodeId || edge.title.contains("HW_MAP")
+        }
+    }
+
     Canvas(modifier = Modifier.fillMaxSize()) {
-        for (edge in visEdges) {
+        // 1. 일반 배선 (배경 계층 - 차분한 애플 라이트/스틸 그레이)
+        for (edge in normalEdges) {
             val p1 = nodePositions[edge.from] ?: continue
             val p2 = nodePositions[edge.to] ?: continue
-            drawBezierEdge(edge, p1, p2)
+            drawBezierEdge(edge, p1, p2, isTop1 = false)
+        }
+        // 2. 1순위 핵심 배선 (전경 계층 - 선명한 애플 시그니처 블루)
+        for (edge in top1Edges) {
+            val p1 = nodePositions[edge.from] ?: continue
+            val p2 = nodePositions[edge.to] ?: continue
+            drawBezierEdge(edge, p1, p2, isTop1 = true)
         }
     }
 }
@@ -353,13 +370,13 @@ private fun MindmapEdgesCanvas(
 private fun DrawScope.drawBezierEdge(
     edge: DtcRgatEngine.RgatVisEdge,
     p1: Offset,
-    p2: Offset
+    p2: Offset,
+    isTop1: Boolean
 ) {
-    val edgeColor = when {
-        edge.title.contains("HW_MAP") -> MindmapTokens.EdgeHwMap
-        edge.title.contains("HW_WIRE") -> MindmapTokens.EdgeHwWire
-        edge.title.contains("AI_HW_WIRE") -> MindmapTokens.EdgeAiWire
-        else -> MindmapTokens.EdgeLogic
+    val (edgeColor, strokeWidth) = when {
+        isTop1 -> Pair(MindmapTokens.EdgeTop1Wire, 2.5f)
+        edge.title.contains("HW_WIRE") || edge.title.contains("AI_HW_WIRE") -> Pair(MindmapTokens.EdgeHwWire, 1.8f)
+        else -> Pair(MindmapTokens.EdgeLogic, 1.2f)
     }
 
     val pathEffect = if (edge.dashes) {
@@ -376,7 +393,7 @@ private fun DrawScope.drawBezierEdge(
         path = path,
         color = edgeColor,
         style = Stroke(
-            width = edge.width.dp.toPx(),
+            width = strokeWidth.dp.toPx(),
             cap = StrokeCap.Round,
             pathEffect = pathEffect
         )
@@ -467,13 +484,13 @@ private fun MindmapInspectionTooltip(
             Icon(
                 imageVector = Icons.Default.Info,
                 contentDescription = "Detail",
-                tint = MindmapTokens.EdgeHwWire,
+                tint = MindmapTokens.EdgeTop1Wire,
                 modifier = Modifier.size(13.dp)
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = node.title.replace("\n", "  |  "),
-                color = Color(0xFF191F28),
+                color = Color(0xFF1D1D1F),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
