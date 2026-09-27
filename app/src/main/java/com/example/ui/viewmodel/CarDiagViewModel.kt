@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.backend.BackendDbStatus
+import com.example.backend.DtcRgatEngine
 import com.example.backend.OnDeviceBackendEngine
 import com.example.data.local.AppDatabase
 import com.example.data.local.DiagnosticHistory
@@ -260,6 +261,31 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
 
     private val _selectedDetailHistory = MutableStateFlow<DiagnosticHistory?>(null)
     val selectedDetailHistory: StateFlow<DiagnosticHistory?> = _selectedDetailHistory.asStateFlow()
+
+    // RGAT Root Cause Analysis Modal Control
+    private val _showRgatModal = MutableStateFlow(false)
+    val showRgatModal: StateFlow<Boolean> = _showRgatModal.asStateFlow()
+
+    private val _rgatAnalysisResult = MutableStateFlow<DtcRgatEngine.RgatAnalysisResult?>(null)
+    val rgatAnalysisResult: StateFlow<DtcRgatEngine.RgatAnalysisResult?> = _rgatAnalysisResult.asStateFlow()
+
+    fun runRgatAnalysis(codes: List<String>) {
+        if (codes.isEmpty()) {
+            showToast("분석할 DTC 코드가 없습니다.")
+            return
+        }
+        viewModelScope.launch(Dispatchers.Default) {
+            val result = backendEngine.analyzeRgat(codes)
+            withContext(Dispatchers.Main) {
+                _rgatAnalysisResult.value = result
+                _showRgatModal.value = true
+            }
+        }
+    }
+
+    fun closeRgatModal() {
+        _showRgatModal.value = false
+    }
 
     // Text Size Control
     fun changeTextSize(delta: Float) {

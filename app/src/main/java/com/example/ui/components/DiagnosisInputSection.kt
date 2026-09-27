@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AcUnit
+import androidx.compose.material.icons.filled.AccountTree
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Mic
@@ -79,6 +80,7 @@ fun DiagnosisInputSection(
     onStartDiagnosis: () -> Unit,
     onOpenScanner: () -> Unit,
     onStartVoiceInput: () -> Unit,
+    onOpenRgatAnalysis: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -185,14 +187,50 @@ fun DiagnosisInputSection(
             Spacer(modifier = Modifier.height(16.dp))
 
             // ── DTC Code Field ─────────────────────────────────────────────────
-            Text(
-                text = "DTC 코드",
-                style = MaterialTheme.typography.labelSmall.copy(
-                    color = TossBlack,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = (13 * textSizeScale).sp
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "DTC 코드",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = TossBlack,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = (13 * textSizeScale).sp
+                    )
                 )
-            )
+
+                if (onOpenRgatAnalysis != null) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFFE8F3FF))
+                            .border(1.dp, Color(0xFFCCE1FF), RoundedCornerShape(8.dp))
+                            .clickable { onOpenRgatAnalysis() }
+                            .padding(horizontal = 9.dp, vertical = 4.dp)
+                            .testTag("btn_rgat_analysis")
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.AccountTree,
+                                contentDescription = null,
+                                tint = Color(0xFF1B64DA),
+                                modifier = Modifier.size((13 * textSizeScale).dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "하네스 분석",
+                                fontSize = (11 * textSizeScale).sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1B64DA),
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(6.dp))
             OutlinedTextField(
                 value = dtcInput,

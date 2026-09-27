@@ -95,6 +95,7 @@ fun DiagnosisScreen(
     onOpenScanner: () -> Unit,
     onRecommendDocument: (Long, String) -> Unit,
     onOpenAddRemedy: () -> Unit,
+    onOpenRgatAnalysis: ((List<String>) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -165,7 +166,24 @@ fun DiagnosisScreen(
                 onStartDiagnosis()
             },
             onOpenScanner = onOpenScanner,
-            onStartVoiceInput = { startGoogleVoiceInput() }
+            onStartVoiceInput = { startGoogleVoiceInput() },
+            onOpenRgatAnalysis = if (onOpenRgatAnalysis != null) {
+                {
+                    val codes = Regex("(?i)\\b([CPBU][0-9A-Z]{4,7})\\b")
+                        .findAll(dtcInput)
+                        .map { it.groupValues[1].uppercase() }
+                        .distinct()
+                        .toList()
+                    if (codes.isNotEmpty()) {
+                        onOpenRgatAnalysis(codes)
+                    } else if (dtcInput.isNotBlank()) {
+                        onOpenRgatAnalysis(listOf(dtcInput.trim().uppercase()))
+                    } else {
+                        // 기본 다발 고장 예시 코드 (C181787: ABS/ESC, C183186: FR_CMR 공통 전방 하네스)
+                        onOpenRgatAnalysis(listOf("C181787", "C183186"))
+                    }
+                }
+            } else null
         )
 
         // Real-time Stepper Indicator during diagnosis Component

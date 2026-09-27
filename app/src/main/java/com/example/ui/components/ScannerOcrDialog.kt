@@ -36,6 +36,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.AccountTree
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
@@ -86,7 +88,8 @@ import kotlinx.coroutines.withContext
 @Composable
 fun ScannerOcrDialog(
     onDismiss: () -> Unit,
-    onSelectCode: (String) -> Unit
+    onSelectCode: (String) -> Unit,
+    onAnalyzeRgat: ((List<String>) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -500,18 +503,48 @@ fun ScannerOcrDialog(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         // [다중 고장코드 근본 원인 통합 진단 버튼]
-                        // 스캔된 DTC가 2개 이상일 때 나타나며, ISO-ROOT 접두사를 부착하여 AI가 연관 공통 원인을 분석하도록 유도
+                        // 스캔된 DTC가 2개 이상일 때 나타나며, RGAT 하네스 커넥터 전용 분석 및 ISO-ROOT 연계 지원
                         if (detectedCodes.size > 1) {
                             Button(
+                                onClick = { 
+                                    if (onAnalyzeRgat != null) {
+                                        onAnalyzeRgat(detectedCodes.toList())
+                                    } else {
+                                        val rootCauseCode = "ISO-ROOT: " + detectedCodes.joinToString(",")
+                                        onSelectCode(rootCauseCode)
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3182F6)),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.AccountTree,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("하네스 커넥터 근본 원인 분석", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            OutlinedButton(
                                 onClick = { 
                                     val rootCauseCode = "ISO-ROOT: " + detectedCodes.joinToString(",")
                                     onSelectCode(rootCauseCode) 
                                 },
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4F46E5)),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(12.dp),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5E8EB))
                             ) {
-                                Text("🔍 다중 코드 근본 원인(Root Cause) 통합 진단", color = Color.White, fontWeight = FontWeight.Bold)
+                                Icon(
+                                    imageVector = Icons.Default.AutoAwesome,
+                                    contentDescription = null,
+                                    tint = Color(0xFF3182F6),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("AI 다중 코드 통합 진단", color = Color(0xFF333D4B), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                             }
                             Spacer(modifier = Modifier.height(8.dp))
                         }

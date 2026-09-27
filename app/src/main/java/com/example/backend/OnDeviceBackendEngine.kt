@@ -55,6 +55,7 @@ class OnDeviceBackendEngine(private val context: Context) {
     val ragSearcher: RAGSearcher
     val qwenLlm: QwenLLM
     val documentWatcher: DocumentWatcher
+    val rgatEngine: DtcRgatEngine by lazy { DtcRgatEngine.getInstance(context) }
 
     init {
         // Resolve DB folder safely per GEMINI.md Rule 1 (Scoped Storage - Internal & App-External Only)
@@ -352,6 +353,14 @@ class OnDeviceBackendEngine(private val context: Context) {
 
     fun recommend(docId: String): Int {
         return vectorDb.updateRecommendation(docId)
+    }
+
+    fun analyzeRgat(
+        codes: List<String>,
+        topologyMask: Boolean = true,
+        topK: Int = 10
+    ): DtcRgatEngine.RgatAnalysisResult {
+        return rgatEngine.analyze(codes, topologyMask = topologyMask, topK = topK)
     }
 
     fun extractMetadata(text: String, contextQuery: String = ""): ExtractedMetadata {

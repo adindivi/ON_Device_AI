@@ -36,6 +36,7 @@ import com.example.ui.components.EditRemedyDialog
 import com.example.ui.components.ErrorAlertDialog
 import com.example.ui.components.HeaderBar
 import com.example.ui.components.PasswordVerificationDialog
+import com.example.ui.components.RootCauseAnalysisDialog
 import com.example.ui.components.ScannerOcrDialog
 import com.example.ui.components.TopFloatingToast
 import com.example.ui.components.WeightSettingsDialog
@@ -85,6 +86,9 @@ fun CarDiagApp(viewModel: CarDiagViewModel) {
     val showWeightSettingsModal by viewModel.showWeightSettingsModal.collectAsStateWithLifecycle()
     val scoringWeights by viewModel.scoringWeights.collectAsStateWithLifecycle()
     val errorDialogState by viewModel.errorDialogState.collectAsStateWithLifecycle()
+
+    val showRgatModal by viewModel.showRgatModal.collectAsStateWithLifecycle()
+    val rgatAnalysisResult by viewModel.rgatAnalysisResult.collectAsStateWithLifecycle()
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -186,7 +190,8 @@ fun CarDiagApp(viewModel: CarDiagViewModel) {
                         onToggleGuide = { viewModel.toggleGuideExpanded() },
                         onOpenScanner = { viewModel.setScannerModalVisible(true) },
                         onRecommendDocument = { id, code -> viewModel.incrementRecommendation(id, code) },
-                        onOpenAddRemedy = { viewModel.setAddRemedyModalVisible(true) }
+                        onOpenAddRemedy = { viewModel.setAddRemedyModalVisible(true) },
+                        onOpenRgatAnalysis = { codes -> viewModel.runRgatAnalysis(codes) }
                     )
                 }
 
@@ -213,7 +218,11 @@ fun CarDiagApp(viewModel: CarDiagViewModel) {
             if (showScannerModal) {
                 ScannerOcrDialog(
                     onDismiss = { viewModel.setScannerModalVisible(false) },
-                    onSelectCode = { viewModel.applyOcrCode(it) }
+                    onSelectCode = { viewModel.applyOcrCode(it) },
+                    onAnalyzeRgat = { codes ->
+                        viewModel.setScannerModalVisible(false)
+                        viewModel.runRgatAnalysis(codes)
+                    }
                 )
             }
 
@@ -276,6 +285,14 @@ fun CarDiagApp(viewModel: CarDiagViewModel) {
                         viewModel.dismissErrorDialog()
                         viewModel.startDiagnosis()
                     }
+                )
+            }
+
+            val currentRgatResult = rgatAnalysisResult
+            if (showRgatModal && currentRgatResult != null) {
+                RootCauseAnalysisDialog(
+                    result = currentRgatResult,
+                    onDismiss = { viewModel.closeRgatModal() }
                 )
             }
 
