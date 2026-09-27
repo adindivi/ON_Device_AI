@@ -144,8 +144,8 @@ fun RgatMindmapCanvas(
     )
 
     val density = LocalDensity.current
-    val topMarginPx = with(density) { (if (isFullscreen) 66.dp else 56.dp).toPx() }
-    val bottomMarginPx = with(density) { (if (isFullscreen) 96.dp else 50.dp).toPx() }
+    val topMarginPx = with(density) { (if (isFullscreen) 66.dp else 64.dp).toPx() }
+    val bottomMarginPx = with(density) { (if (isFullscreen) 96.dp else 64.dp).toPx() }
 
     // 노드별 화면 2D 좌표 계산
     val nodePositions = remember(canvasSize, visNodes, topMarginPx, bottomMarginPx) {
@@ -533,8 +533,8 @@ private fun calculateNodePositions(
     }
 
     layoutColumn(level0, width * 0.16f)
-    layoutColumn(level1, width * 0.49f)
-    layoutColumn(level2, width * 0.81f)
+    layoutColumn(level1, width * 0.47f)
+    layoutColumn(level2, width * 0.77f)
 
     return map
 }
