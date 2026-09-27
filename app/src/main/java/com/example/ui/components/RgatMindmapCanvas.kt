@@ -154,8 +154,15 @@ fun RgatMindmapCanvas(
             .onSizeChanged { canvasSize = it }
             .pointerInput(Unit) {
                 detectTransformGestures { _, pan, zoom, _ ->
-                    scale = (scale * zoom).coerceIn(0.6f, 2.5f)
-                    offset += pan
+                    val newScale = (scale * zoom).coerceIn(1.0f, 2.5f)
+                    val maxPanX = ((canvasSize.width * (newScale - 1.0f)) / 2f).coerceAtLeast(0f)
+                    val maxPanY = ((canvasSize.height * (newScale - 1.0f)) / 2f).coerceAtLeast(0f)
+
+                    val newOffsetX = if (newScale <= 1.02f) 0f else (offset.x + pan.x * 0.85f).coerceIn(-maxPanX, maxPanX)
+                    val newOffsetY = if (newScale <= 1.02f) 0f else (offset.y + pan.y * 0.85f).coerceIn(-maxPanY, maxPanY)
+
+                    scale = newScale
+                    offset = Offset(newOffsetX, newOffsetY)
                 }
             }
     ) {
@@ -357,15 +364,15 @@ private fun MindmapNodesOverlay(
                     }
                 }
                 .graphicsLayer(scaleX = nodeScale, scaleY = nodeScale)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(6.dp))
                 .background(style.bg)
                 .border(
-                    width = if (isSelected) 2.5.dp else if (isTop1) 2.dp else 1.dp,
+                    width = if (isSelected) 2.dp else if (isTop1) 1.5.dp else 1.dp,
                     color = if (isSelected) MindmapTokens.SelectedBorder else style.border,
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(6.dp)
                 )
                 .clickable { onNodeClick(node) }
-                .padding(horizontal = 9.dp, vertical = 5.dp)
+                .padding(horizontal = 7.dp, vertical = 2.5.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -376,14 +383,14 @@ private fun MindmapNodesOverlay(
                         imageVector = Icons.Default.CheckCircle,
                         contentDescription = "Top 1 Verified",
                         tint = MindmapTokens.EdgeHwWire,
-                        modifier = Modifier.size(12.dp)
+                        modifier = Modifier.size(11.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(3.dp))
                 }
                 Text(
                     text = node.label,
                     color = style.text,
-                    fontSize = if (isTop1) 11.sp else 10.sp,
+                    fontSize = if (isTop1) 10.5.sp else 9.5.sp,
                     fontFamily = if (node.level == 0) FontFamily.Monospace else FontFamily.Default,
                     fontWeight = if (isTop1) FontWeight.Bold else FontWeight.Medium,
                     maxLines = 1,
@@ -431,7 +438,7 @@ private fun MindmapInspectionTooltip(
 }
 
 /**
- * 3열(DTC, ECU, Connector) 노드 2D 좌표 배치 계산 함수
+ * 3열(DTC, ECU, Connector) 노드 2D 좌표 배치 계산 함수 (충돌 방지 가변 여백 적용)
  */
 private fun calculateNodePositions(
     visNodes: List<DtcRgatEngine.RgatVisNode>,
@@ -450,15 +457,38 @@ private fun calculateNodePositions(
 
     fun layoutColumn(nodes: List<DtcRgatEngine.RgatVisNode>, x: Float) {
         val count = nodes.size
+        if (count == 0) return
+        if (count == 1) {
+            map[nodes[0].id] = Offset(x, topMarginPx + usableHeight / 2f)
+            return
+        }
+        if (count == 2) {
+            val centerY = topMarginPx + usableHeight / 2f
+            val span = (usableHeight * 0.26f).coerceAtLeast(34f)
+            map[nodes[0].id] = Offset(x, centerY - span)
+            map[nodes[1].id] = Offset(x, centerY + span)
+            return
+        }
+        if (count == 3) {
+            val centerY = topMarginPx + usableHeight / 2f
+            val span = (usableHeight * 0.36f).coerceAtLeast(46f)
+            map[nodes[0].id] = Offset(x, centerY - span)
+            map[nodes[1].id] = Offset(x, centerY)
+            map[nodes[2].id] = Offset(x, centerY + span)
+            return
+        }
+        // count >= 4 (4개 DTC 코드 또는 5개 커넥터 노드 전 구역 균등 분배)
+        val startY = topMarginPx + 14f
+        val endY = height - bottomMarginPx - 14f
+        val stepY = (endY - startY) / (count - 1)
         nodes.forEachIndexed { idx, node ->
-            val y = topMarginPx + (idx + 1) * usableHeight / (count + 1)
-            map[node.id] = Offset(x, y)
+            map[node.id] = Offset(x, startY + idx * stepY)
         }
     }
 
     layoutColumn(level0, width * 0.16f)
-    layoutColumn(level1, width * 0.50f)
-    layoutColumn(level2, width * 0.84f)
+    layoutColumn(level1, width * 0.48f)
+    layoutColumn(level2, width * 0.80f)
 
     return map
 }

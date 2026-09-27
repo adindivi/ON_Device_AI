@@ -8,6 +8,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -148,11 +150,11 @@ fun RootCauseAnalysisDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // 4. 탭별 컨텐츠 영역 (높이 380dp 고정)
+                // 4. 탭별 컨텐츠 영역 (높이 415dp로 확장하여 마인드맵 노드 여유 공간 확보)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(380.dp)
+                        .height(415.dp)
                 ) {
                     when (selectedTab) {
                         0 -> MindmapTabContent(topCandidate = topCandidate, result = result)
@@ -238,10 +240,10 @@ private fun DialogHeader(onDismiss: () -> Unit) {
 
 @Composable
 private fun DtcChipsSection(inputCodes: List<String>) {
+    val scrollState = rememberScrollState()
     Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = "분석 코드",
@@ -251,23 +253,32 @@ private fun DtcChipsSection(inputCodes: List<String>) {
             maxLines = 1,
             softWrap = false
         )
-        inputCodes.forEach { code ->
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(RgatDialogTokens.SurfaceNeutral)
-                    .border(1.dp, RgatDialogTokens.BorderNeutral, RoundedCornerShape(6.dp))
-                    .padding(horizontal = 7.dp, vertical = 2.dp)
-            ) {
-                Text(
-                    text = code,
-                    color = Color(0xFF333D4B),
-                    fontSize = 11.sp,
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    softWrap = false
-                )
+        Spacer(modifier = Modifier.width(8.dp))
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .horizontalScroll(scrollState),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            inputCodes.forEach { code ->
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(RgatDialogTokens.SurfaceNeutral)
+                        .border(1.dp, RgatDialogTokens.BorderNeutral, RoundedCornerShape(6.dp))
+                        .padding(horizontal = 7.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = code,
+                        color = Color(0xFF333D4B),
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
             }
         }
     }

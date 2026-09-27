@@ -85,4 +85,25 @@ class RootCauseDialogScreenshotTest {
             filePath = "src/test/screenshots/tab_2_dtc_detail.png"
         )
     }
+
+    @Test
+    fun `captureUserScenario_4DTCs`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val engine = DtcRgatEngine.getInstance(context)
+        val userResult = engine.analyze(listOf("B16C500", "B16C600", "B186D16", "B187C88"))
+
+        composeTestRule.setContent {
+            MyApplicationTheme {
+                RootCauseAnalysisDialog(
+                    result = userResult,
+                    onDismiss = {},
+                    initialTab = 0
+                )
+            }
+        }
+
+        composeTestRule.onRoot().captureRoboImage(
+            filePath = "src/test/screenshots/user_scenario_4dtcs_mindmap.png"
+        )
+    }
 }
