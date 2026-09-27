@@ -71,33 +71,36 @@ import kotlin.math.roundToInt
  * 3계층 마인드맵 전용 다크 핀테크 색상 및 레이아웃 토큰
  */
 private object MindmapTokens {
-    val CanvasBg = Color(0xFF191F28)
-    val CanvasBorder = Color(0xFF333D4B)
-    val CapsuleBg = Color(0xFF262E3D)
+    val CanvasBg = Color(0xFFF8FAFC)        // 산뜻한 라이트 그레이/화이트 캔버스
+    val CanvasBorder = Color(0xFFE2E8F0)    // 은은하고 깨끗한 테두리
+    val CapsuleBg = Color(0xFFEDF2F7)       // 상단 헤더 태그 캡슐 배경
 
-    // 열 타이틀 색상
-    val TitleDtc = Color(0xFF79B8FF)
-    val TitleEcu = Color(0xFFFFA657)
-    val TitleConn = Color(0xFF56D364)
+    // 열 타이틀 색상 (라이트 모드 고대비 텍스트)
+    val TitleDtc = Color(0xFF1D4ED8)
+    val TitleEcu = Color(0xFFB45309)
+    val TitleConn = Color(0xFF047857)
 
-    // 엣지 관계선 색상
-    val EdgeHwMap = Color(0xFF38BDF8)     // 직결 검증 (스카이블루)
-    val EdgeHwWire = Color(0xFF3182F6)    // 물리 배선 (토스 블루)
-    val EdgeAiWire = Color(0xFF8B5CF6)    // AI 추론 가상 배선 (보라)
-    val EdgeLogic = Color(0xFF4E5968)     // 소프트웨어 논리 관계 (그레이)
+    // 엣지 관계선 색상 (라이트 배경 시인성 극대화)
+    val EdgeHwMap = Color(0xFF0284C7)     // 직결 검증 (스카이블루)
+    val EdgeHwWire = Color(0xFF2563EB)    // 물리 배선 (토스 로얄 블루)
+    val EdgeAiWire = Color(0xFF7C3AED)    // AI 추론 가상 배선 (바이올렛)
+    val EdgeLogic = Color(0xFF94A3B8)     // 소프트웨어 논리 관계 (슬레이트 그레이)
 
     // 선택 하이라이트
-    val SelectedBorder = Color(0xFFFFDD00)
+    val SelectedBorder = Color(0xFFF59E0B) // 골드 앰버
 
-    // 노드 스타일 사양
+    // 노드 스타일 사양 (라이트 카드 테마)
     data class NodeStyle(val bg: Color, val border: Color, val text: Color)
 
     fun resolveNodeStyle(node: DtcRgatEngine.RgatVisNode): NodeStyle = when {
-        node.group == "conn_top1" -> NodeStyle(Color(0xFF1B335A), Color(0xFF3182F6), Color.White)
-        node.group == "conn_top" -> NodeStyle(Color(0xFF143022), Color(0xFF34C759), Color(0xFFD4F8DE))
-        node.level == 2 -> NodeStyle(Color(0xFF142B1F), Color(0xFF2EA043), Color(0xFFDCFCE7))
-        node.level == 1 -> NodeStyle(Color(0xFF2E241E), Color(0xFFFF9E40), Color(0xFFFFE6D0))
-        else -> NodeStyle(Color(0xFF192A42), Color(0xFF5B9DFF), Color(0xFFE0EDFF))
+        // 1위 최우선 원인 커넥터: 선명한 토스 블루 솔리드 카드
+        node.group == "conn_top1" -> NodeStyle(Color(0xFF3182F6), Color(0xFF1D4ED8), Color.White)
+        // 기타 추천 커넥터: 산뜻한 민트/에메랄드 카드
+        node.group == "conn_top" || node.level == 2 -> NodeStyle(Color(0xFFF0FDF4), Color(0xFF86EFAC), Color(0xFF166534))
+        // 제어기 (ECU): 부드러운 웜 앰버 카드
+        node.level == 1 -> NodeStyle(Color(0xFFFFFBEB), Color(0xFFFDE68A), Color(0xFF92400E))
+        // 진단 코드 (DTC): 청량한 소프트 블루 카드
+        else -> NodeStyle(Color(0xFFEFF6FF), Color(0xFFBFDBFE), Color(0xFF1E40AF))
     }
 }
 
@@ -301,14 +304,15 @@ private fun MindmapControlButtons(
                 modifier = Modifier
                     .size(34.dp)
                     .clip(CircleShape)
-                    .background(MindmapTokens.CanvasBorder.copy(alpha = 0.90f))
+                    .background(Color.White)
+                    .border(1.dp, MindmapTokens.CanvasBorder, CircleShape)
                     .clickable(onClick = onToggleFullscreen),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = if (isFullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
                     contentDescription = if (isFullscreen) "전체화면 종료" else "전체화면",
-                    tint = Color.White,
+                    tint = Color(0xFF333D4B),
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -317,14 +321,15 @@ private fun MindmapControlButtons(
             modifier = Modifier
                 .size(34.dp)
                 .clip(CircleShape)
-                .background(MindmapTokens.CanvasBorder.copy(alpha = 0.90f))
+                .background(Color.White)
+                .border(1.dp, MindmapTokens.CanvasBorder, CircleShape)
                 .clickable(onClick = onResetZoom),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.Refresh,
                 contentDescription = "화면 비율 리셋",
-                tint = Color.White,
+                tint = Color(0xFF333D4B),
                 modifier = Modifier.size(16.dp)
             )
         }
@@ -423,7 +428,7 @@ private fun MindmapNodesOverlay(
                     Icon(
                         imageVector = Icons.Default.CheckCircle,
                         contentDescription = "Top 1 Verified",
-                        tint = MindmapTokens.EdgeHwWire,
+                        tint = Color.White,
                         modifier = Modifier.size(11.dp)
                     )
                     Spacer(modifier = Modifier.width(3.dp))
@@ -453,8 +458,8 @@ private fun MindmapInspectionTooltip(
         modifier = modifier
             .padding(start = 14.dp, end = 90.dp, bottom = 14.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(MindmapTokens.CapsuleBg.copy(alpha = 0.95f))
-            .border(1.dp, Color(0xFF4E5968), RoundedCornerShape(8.dp))
+            .background(Color.White)
+            .border(1.dp, MindmapTokens.CanvasBorder, RoundedCornerShape(8.dp))
             .clickable { onDismiss() }
             .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
@@ -462,13 +467,13 @@ private fun MindmapInspectionTooltip(
             Icon(
                 imageVector = Icons.Default.Info,
                 contentDescription = "Detail",
-                tint = MindmapTokens.EdgeHwMap,
+                tint = MindmapTokens.EdgeHwWire,
                 modifier = Modifier.size(13.dp)
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = node.title.replace("\n", "  |  "),
-                color = Color.White,
+                color = Color(0xFF191F28),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,

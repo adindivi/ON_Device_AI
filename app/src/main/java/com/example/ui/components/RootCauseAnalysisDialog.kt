@@ -128,7 +128,7 @@ fun RootCauseAnalysisDialog(
         ) {
             Surface(
                 modifier = Modifier.fillMaxSize(),
-                color = Color(0xFF0F172A)
+                color = Color(0xFFF8FAFC)
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     // 상단 헤더 바 (DTC 칩 & 1순위 추천 메타데이터 포함)
@@ -229,7 +229,8 @@ private fun FullscreenMindmapHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFF1E293B))
+            .background(Color.White)
+            .border(1.dp, RgatDialogTokens.BorderNeutral)
             .padding(horizontal = 16.dp, vertical = 10.dp)
     ) {
         // 1행: 타이틀 및 닫기 버튼
@@ -254,7 +255,7 @@ private fun FullscreenMindmapHeader(
                         text = "하네스 인과관계 배선 마인드맵 (전체화면)",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = RgatDialogTokens.TextPrimary
                         ),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -262,7 +263,7 @@ private fun FullscreenMindmapHeader(
                     Text(
                         text = "터치 드래그 이동 · 핀치 줌 제스처 지원",
                         style = MaterialTheme.typography.bodySmall.copy(
-                            color = Color(0xFF94A3B8),
+                            color = RgatDialogTokens.TextTertiary,
                             fontSize = 11.sp
                         ),
                         maxLines = 1,
@@ -275,12 +276,12 @@ private fun FullscreenMindmapHeader(
                 onClick = onClose,
                 modifier = Modifier
                     .size(34.dp)
-                    .background(Color(0xFF334155), CircleShape)
+                    .background(RgatDialogTokens.SurfaceNeutral, CircleShape)
             ) {
                 Icon(
                     imageVector = Icons.Default.FullscreenExit,
                     contentDescription = "전체화면 닫기",
-                    tint = Color.White,
+                    tint = RgatDialogTokens.TextSecondary,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -298,7 +299,7 @@ private fun FullscreenMindmapHeader(
         ) {
             Text(
                 text = "분석 대상:",
-                color = Color(0xFF64748B),
+                color = RgatDialogTokens.TextTertiary,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold,
                 softWrap = false
@@ -308,12 +309,12 @@ private fun FullscreenMindmapHeader(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
-                        .background(Color(0xFF334155))
+                        .background(RgatDialogTokens.SurfaceNeutral)
                         .padding(horizontal = 6.dp, vertical = 2.dp)
                 ) {
                     Text(
                         text = code,
-                        color = Color(0xFF93C5FD),
+                        color = Color(0xFF1E40AF),
                         fontSize = 10.5.sp,
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Bold,
@@ -332,12 +333,12 @@ private fun FullscreenMindmapHeader(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
-                        .background(Color(0xFF065F46))
+                        .background(RgatDialogTokens.SuccessGreenLight)
                         .padding(horizontal = 7.dp, vertical = 2.dp)
                 ) {
                     Text(
                         text = "★ 최우선: ${topCandidate.name} ($scoreText)",
-                        color = Color(0xFF6EE7B7),
+                        color = RgatDialogTokens.SuccessGreen,
                         fontSize = 10.5.sp,
                         fontWeight = FontWeight.Bold,
                         softWrap = false
