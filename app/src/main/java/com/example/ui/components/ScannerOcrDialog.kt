@@ -525,7 +525,7 @@ fun ScannerOcrDialog(
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("하네스 커넥터 근본 원인 분석", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text("동시 고장 배선 진단", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                             }
                             Spacer(modifier = Modifier.height(6.dp))
                             OutlinedButton(

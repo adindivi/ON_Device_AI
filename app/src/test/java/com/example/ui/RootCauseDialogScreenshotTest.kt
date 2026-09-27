@@ -178,14 +178,15 @@ class RootCauseDialogScreenshotTest {
         }
 
         // 기본 다이얼로그 확인
-        composeTestRule.onNodeWithText("하네스 커넥터 근본 원인 분석").assertIsDisplayed()
+        composeTestRule.onNodeWithText("동시 고장 배선 진단").assertIsDisplayed()
 
         // 전체화면 버튼 클릭 -> 전체화면 진입
         composeTestRule.onNodeWithContentDescription("전체화면").performClick()
+        composeTestRule.onNodeWithText("배선 연결망 한눈에 보기").assertIsDisplayed()
         composeTestRule.onNodeWithContentDescription("전체화면 닫기").assertIsDisplayed()
 
         // 상단 전체화면 닫기 버튼 클릭 -> 기본 다이얼로그 복귀
         composeTestRule.onNodeWithContentDescription("전체화면 닫기").performClick()
-        composeTestRule.onNodeWithText("하네스 커넥터 근본 원인 분석").assertIsDisplayed()
+        composeTestRule.onNodeWithText("동시 고장 배선 진단").assertIsDisplayed()
     }
 }

@@ -252,7 +252,7 @@ private fun FullscreenMindmapHeader(
                 Spacer(modifier = Modifier.width(8.dp))
                 Column(modifier = Modifier.weight(1f, fill = false)) {
                     Text(
-                        text = "하네스 인과관계 배선 마인드맵 (전체화면)",
+                        text = "배선 연결망 한눈에 보기",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = RgatDialogTokens.TextPrimary
@@ -261,7 +261,7 @@ private fun FullscreenMindmapHeader(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = "터치 드래그 이동 · 핀치 줌 제스처 지원",
+                        text = "자유롭게 확대 및 이동 가능",
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = RgatDialogTokens.TextTertiary,
                             fontSize = 11.sp
@@ -385,7 +385,7 @@ private fun DialogHeader(onDismiss: () -> Unit) {
             Spacer(modifier = Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f, fill = false)) {
                 Text(
-                    text = "하네스 커넥터 근본 원인 분석",
+                    text = "동시 고장 배선 진단",
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = RgatDialogTokens.TextPrimary
@@ -394,7 +394,7 @@ private fun DialogHeader(onDismiss: () -> Unit) {
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "인과 관계 그래프 및 링크 예측 분석",
+                    text = "다중 코드 연관 배선 추적",
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = RgatDialogTokens.TextTertiary,
                         fontSize = 11.sp
