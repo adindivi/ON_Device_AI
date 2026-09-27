@@ -144,8 +144,8 @@ fun RgatMindmapCanvas(
     )
 
     val density = LocalDensity.current
-    val topMarginPx = with(density) { (if (isFullscreen) 66.dp else 46.dp).toPx() }
-    val bottomMarginPx = with(density) { (if (isFullscreen) 102.dp else 50.dp).toPx() }
+    val topMarginPx = with(density) { (if (isFullscreen) 66.dp else 56.dp).toPx() }
+    val bottomMarginPx = with(density) { (if (isFullscreen) 96.dp else 50.dp).toPx() }
 
     // 노드별 화면 2D 좌표 계산
     val nodePositions = remember(canvasSize, visNodes, topMarginPx, bottomMarginPx) {
@@ -258,7 +258,7 @@ private fun MindmapColumnHeader() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 10.dp),
+            .padding(horizontal = 14.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -294,32 +294,14 @@ private fun MindmapControlButtons(
     onResetZoom: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier.padding(end = 14.dp, bottom = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+    Row(
+        modifier = modifier.padding(end = 12.dp, bottom = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        if (onToggleFullscreen != null) {
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .clip(CircleShape)
-                    .background(Color.White)
-                    .border(1.dp, MindmapTokens.CanvasBorder, CircleShape)
-                    .clickable(onClick = onToggleFullscreen),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (isFullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
-                    contentDescription = if (isFullscreen) "전체화면 종료" else "전체화면",
-                    tint = Color(0xFF333D4B),
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
         Box(
             modifier = Modifier
-                .size(34.dp)
+                .size(30.dp)
                 .clip(CircleShape)
                 .background(Color.White)
                 .border(1.dp, MindmapTokens.CanvasBorder, CircleShape)
@@ -330,8 +312,26 @@ private fun MindmapControlButtons(
                 imageVector = Icons.Default.Refresh,
                 contentDescription = "화면 비율 리셋",
                 tint = Color(0xFF333D4B),
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(15.dp)
             )
+        }
+        if (onToggleFullscreen != null) {
+            Box(
+                modifier = Modifier
+                    .size(30.dp)
+                    .clip(CircleShape)
+                    .background(Color.White)
+                    .border(1.dp, MindmapTokens.CanvasBorder, CircleShape)
+                .clickable(onClick = onToggleFullscreen),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (isFullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                    contentDescription = if (isFullscreen) "전체화면 종료" else "전체화면",
+                    tint = Color(0xFF333D4B),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
         }
     }
 }
@@ -524,8 +524,8 @@ private fun calculateNodePositions(
             return
         }
         // count >= 4 (4개 DTC 코드 또는 5개 커넥터 노드 전 구역 균등 분배)
-        val startY = topMarginPx + 8f
-        val endY = height - bottomMarginPx - 8f
+        val startY = topMarginPx + 4f
+        val endY = height - bottomMarginPx - 4f
         val stepY = (endY - startY) / (count - 1)
         nodes.forEachIndexed { idx, node ->
             map[node.id] = Offset(x, startY + idx * stepY)
