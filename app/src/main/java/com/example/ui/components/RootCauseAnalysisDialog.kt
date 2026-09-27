@@ -289,42 +289,12 @@ private fun FullscreenMindmapHeader(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // 2행: 분석 대상 DTC 칩 및 최우선 추천 커넥터 뱃지 (가로 스크롤)
+        // 2행: 최우선 추천 커넥터 (고정 앵커) & 분석 대상 DTC 칩 (가로 스크롤)
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "분석 대상:",
-                color = RgatDialogTokens.TextTertiary,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                softWrap = false
-            )
-
-            result.inputCodes.forEach { code ->
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(RgatDialogTokens.SurfaceNeutral)
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = code,
-                        color = Color(0xFF1E40AF),
-                        fontSize = 10.5.sp,
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold,
-                        softWrap = false
-                    )
-                }
-            }
-
             if (topCandidate != null) {
-                Spacer(modifier = Modifier.width(4.dp))
                 val scoreText = if (topCandidate.verified) {
                     "직결 100%"
                 } else {
@@ -334,15 +304,53 @@ private fun FullscreenMindmapHeader(
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
                         .background(RgatDialogTokens.SuccessGreenLight)
-                        .padding(horizontal = 7.dp, vertical = 2.dp)
+                        .padding(horizontal = 7.dp, vertical = 2.5.dp)
                 ) {
                     Text(
                         text = "★ 최우선: ${topCandidate.name} ($scoreText)",
                         color = RgatDialogTokens.SuccessGreen,
-                        fontSize = 10.5.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        softWrap = false
+                        softWrap = false,
+                        maxLines = 1
                     )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "DTC:",
+                    color = RgatDialogTokens.TextTertiary,
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    softWrap = false,
+                    maxLines = 1
+                )
+
+                result.inputCodes.forEach { code ->
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(RgatDialogTokens.SurfaceNeutral)
+                            .padding(horizontal = 5.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = code,
+                            color = Color(0xFF1E40AF),
+                            fontSize = 10.sp,
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            softWrap = false,
+                            maxLines = 1
+                        )
+                    }
                 }
             }
         }
