@@ -200,7 +200,6 @@ fun RootCauseAnalysisDialog(
                     ) {
                         when (selectedTab) {
                             0 -> MindmapTabContent(
-                                topCandidate = topCandidate,
                                 result = result,
                                 onOpenFullscreen = { isFullscreenMindmap = true }
                             )
@@ -530,23 +529,16 @@ private fun SegmentedTabControl(
 
 @Composable
 private fun MindmapTabContent(
-    topCandidate: DtcRgatEngine.RgatConnectorRank?,
     result: DtcRgatEngine.RgatAnalysisResult,
     onOpenFullscreen: () -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        if (topCandidate != null) {
-            TopCandidateCard(topCandidate = topCandidate)
-            Spacer(modifier = Modifier.height(6.dp))
-        }
-        RgatMindmapCanvas(
-            visNodes = result.visNodes,
-            visEdges = result.visEdges,
-            modifier = Modifier.weight(1f),
-            isFullscreen = false,
-            onToggleFullscreen = onOpenFullscreen
-        )
-    }
+    RgatMindmapCanvas(
+        visNodes = result.visNodes,
+        visEdges = result.visEdges,
+        modifier = Modifier.fillMaxSize(),
+        isFullscreen = false,
+        onToggleFullscreen = onOpenFullscreen
+    )
 }
 
 @Composable
@@ -637,80 +629,6 @@ private fun DialogActionBar(
     }
 }
 
-/**
- * 최우선 추천 커넥터 슬림 카드 (불필요한 아이콘 제거 및 1행 슬림화로 마인드맵 높이 극대화)
- */
-@Composable
-private fun TopCandidateCard(topCandidate: DtcRgatEngine.RgatConnectorRank) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(10.dp),
-        colors = CardDefaults.cardColors(containerColor = RgatDialogTokens.SurfaceCard),
-        border = BorderStroke(1.dp, RgatDialogTokens.BorderNeutral)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 7.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                modifier = Modifier.weight(1f, fill = false),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(RgatDialogTokens.BrandBlueLight)
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = "1순위 원인",
-                        color = RgatDialogTokens.BrandBlue,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        softWrap = false
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = topCandidate.name,
-                    style = MaterialTheme.typography.titleSmall.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = RgatDialogTokens.TextPrimary
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            Spacer(modifier = Modifier.width(6.dp))
-
-            val scoreText = if (topCandidate.verified) {
-                "직결 100%"
-            } else {
-                "${String.format(Locale.US, "%.0f", (topCandidate.finalScore * 100).coerceAtMost(100.0))}%"
-            }
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(if (topCandidate.verified) RgatDialogTokens.SuccessGreenLight else RgatDialogTokens.BrandBlueLight)
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-            ) {
-                Text(
-                    text = scoreText,
-                    color = if (topCandidate.verified) RgatDialogTokens.SuccessGreen else Color(0xFF1B64DA),
-                    fontSize = 10.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    softWrap = false
-                )
-            }
-        }
-    }
-}
 
 /**
  * 커넥터 순위 리스트 아이템 카드
