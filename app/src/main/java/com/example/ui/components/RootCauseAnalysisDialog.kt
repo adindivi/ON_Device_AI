@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.FormatListNumbered
+import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Verified
@@ -46,6 +48,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -109,67 +112,157 @@ private object RgatDialogTokens {
 fun RootCauseAnalysisDialog(
     result: DtcRgatEngine.RgatAnalysisResult,
     onDismiss: () -> Unit,
-    initialTab: Int = 0
+    initialTab: Int = 0,
+    initialFullscreenMindmap: Boolean = false
 ) {
     val context = LocalContext.current
     var selectedTab by remember { mutableIntStateOf(initialTab) }
+    var isFullscreenMindmap by remember { mutableStateOf(initialFullscreenMindmap) }
     val topCandidate = result.results.firstOrNull()
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.95f)
-                .clip(RoundedCornerShape(20.dp))
-                .border(1.dp, RgatDialogTokens.BorderNeutral, RoundedCornerShape(20.dp)),
-            color = RgatDialogTokens.SurfaceBg,
-            shadowElevation = 10.dp
+    if (isFullscreenMindmap) {
+        // A. 마인드맵 단독 전체화면 다이얼로그
+        Dialog(
+            onDismissRequest = { isFullscreenMindmap = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp)
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = Color(0xFF0F172A)
             ) {
-                // 1. 헤더 (고급 핀테크 타이틀 바 + 닫기 버튼)
-                DialogHeader(onDismiss = onDismiss)
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // 상단 헤더 바
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFF1E293B))
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f, fill = false)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AccountTree,
+                                contentDescription = null,
+                                tint = RgatDialogTokens.BrandBlue,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f, fill = false)) {
+                                Text(
+                                    text = "하네스 인과관계 배선 마인드맵 (전체화면)",
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    ),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = "터치 드래그로 이동, 핀치로 확대/축소 가능",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = Color(0xFF94A3B8),
+                                        fontSize = 11.sp
+                                    ),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                        IconButton(
+                            onClick = { isFullscreenMindmap = false },
+                            modifier = Modifier
+                                .size(34.dp)
+                                .background(Color(0xFF334155), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.FullscreenExit,
+                                contentDescription = "전체화면 닫기",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
 
-                // 2. 분석 대상 DTC 태그 칩
-                DtcChipsSection(inputCodes = result.inputCodes)
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // 3. 토스 스타일 세그먼트 컨트롤 탭 바 (Rule 3)
-                SegmentedTabControl(
-                    selectedTab = selectedTab,
-                    onTabSelected = { selectedTab = it }
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // 4. 탭별 컨텐츠 영역 (높이 415dp로 확장하여 마인드맵 노드 여유 공간 확보)
-                Box(
+                    // 마인드맵 전체화면 캔버스
+                    RgatMindmapCanvas(
+                        visNodes = result.visNodes,
+                        visEdges = result.visEdges,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        isFullscreen = true,
+                        onToggleFullscreen = { isFullscreenMindmap = false }
+                    )
+                }
+            }
+        }
+    } else {
+        // B. 기본 하네스 근본 원인 분석 다이얼로그
+        Dialog(
+            onDismissRequest = onDismiss,
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth(0.95f)
+                    .clip(RoundedCornerShape(20.dp))
+                    .border(1.dp, RgatDialogTokens.BorderNeutral, RoundedCornerShape(20.dp)),
+                color = RgatDialogTokens.SurfaceBg,
+                shadowElevation = 10.dp
+            ) {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(415.dp)
+                        .padding(20.dp)
                 ) {
-                    when (selectedTab) {
-                        0 -> MindmapTabContent(topCandidate = topCandidate, result = result)
-                        1 -> RankingTabContent(rankings = result.results)
-                        2 -> DtcDetailTabContent(dtcInfoList = result.dtcInfo)
+                    // 1. 헤더 (고급 핀테크 타이틀 바 + 닫기 버튼)
+                    DialogHeader(onDismiss = onDismiss)
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // 2. 분석 대상 DTC 태그 칩
+                    DtcChipsSection(inputCodes = result.inputCodes)
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // 3. 토스 스타일 세그먼트 컨트롤 탭 바 (Rule 3)
+                    SegmentedTabControl(
+                        selectedTab = selectedTab,
+                        onTabSelected = { selectedTab = it }
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // 4. 탭별 컨텐츠 영역 (높이 415dp로 확장하여 마인드맵 노드 여유 공간 확보)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(415.dp)
+                    ) {
+                        when (selectedTab) {
+                            0 -> MindmapTabContent(
+                                topCandidate = topCandidate,
+                                result = result,
+                                onOpenFullscreen = { isFullscreenMindmap = true }
+                            )
+                            1 -> RankingTabContent(rankings = result.results)
+                            2 -> DtcDetailTabContent(dtcInfoList = result.dtcInfo)
+                        }
                     }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // 5. 하단 액션 버튼
+                    DialogActionBar(
+                        onCopySummary = { copySummaryToClipboard(context, result, topCandidate) },
+                        onDismiss = onDismiss
+                    )
                 }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // 5. 하단 액션 버튼
-                DialogActionBar(
-                    onCopySummary = { copySummaryToClipboard(context, result, topCandidate) },
-                    onDismiss = onDismiss
-                )
             }
         }
     }
@@ -347,7 +440,8 @@ private fun SegmentedTabControl(
 @Composable
 private fun MindmapTabContent(
     topCandidate: DtcRgatEngine.RgatConnectorRank?,
-    result: DtcRgatEngine.RgatAnalysisResult
+    result: DtcRgatEngine.RgatAnalysisResult,
+    onOpenFullscreen: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         if (topCandidate != null) {
@@ -357,7 +451,9 @@ private fun MindmapTabContent(
         RgatMindmapCanvas(
             visNodes = result.visNodes,
             visEdges = result.visEdges,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            isFullscreen = false,
+            onToggleFullscreen = onOpenFullscreen
         )
     }
 }

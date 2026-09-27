@@ -13,6 +13,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,6 +27,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
@@ -111,7 +114,9 @@ private object MindmapTokens {
 fun RgatMindmapCanvas(
     visNodes: List<DtcRgatEngine.RgatVisNode>,
     visEdges: List<DtcRgatEngine.RgatVisEdge>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isFullscreen: Boolean = false,
+    onToggleFullscreen: (() -> Unit)? = null
 ) {
     if (visNodes.isEmpty()) {
         EmptyMindmapPlaceholder(modifier = modifier)
@@ -166,19 +171,7 @@ fun RgatMindmapCanvas(
                 }
             }
     ) {
-        // 1. 상단 3계층 컬럼 안내 헤더
-        MindmapColumnHeader()
-
-        // 2. 줌 리셋 플로팅 버튼
-        ZoomResetButton(
-            modifier = Modifier.align(Alignment.BottomEnd),
-            onReset = {
-                scale = 1.0f
-                offset = Offset.Zero
-            }
-        )
-
-        // 3. 변환 레이어 (Canvas 엣지 + Composable 노드)
+        // 1. 변환 레이어 (Canvas 엣지 + Composable 노드)
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -206,6 +199,20 @@ fun RgatMindmapCanvas(
                 }
             )
         }
+
+        // 2. 상단 3계층 컬럼 안내 헤더
+        MindmapColumnHeader()
+
+        // 3. 플로팅 컨트롤 버튼 (전체화면 토글 + 줌 리셋)
+        MindmapControlButtons(
+            isFullscreen = isFullscreen,
+            onToggleFullscreen = onToggleFullscreen,
+            onResetZoom = {
+                scale = 1.0f
+                offset = Offset.Zero
+            },
+            modifier = Modifier.align(Alignment.BottomEnd)
+        )
 
         // 4. 노드 상세 인스펙션 툴팁
         if (selectedNode != null) {
@@ -273,20 +280,49 @@ private fun ColumnTitleTag(title: String, color: Color) {
 }
 
 @Composable
-private fun ZoomResetButton(modifier: Modifier = Modifier, onReset: () -> Unit) {
-    IconButton(
-        onClick = onReset,
-        modifier = modifier
-            .padding(10.dp)
-            .size(32.dp)
-            .background(MindmapTokens.CanvasBorder.copy(alpha = 0.85f), CircleShape)
+private fun MindmapControlButtons(
+    isFullscreen: Boolean,
+    onToggleFullscreen: (() -> Unit)?,
+    onResetZoom: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.padding(end = 12.dp, bottom = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(
-            imageVector = Icons.Default.Refresh,
-            contentDescription = "Zoom Reset",
-            tint = Color.White,
-            modifier = Modifier.size(15.dp)
-        )
+        if (onToggleFullscreen != null) {
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(CircleShape)
+                    .background(MindmapTokens.CanvasBorder.copy(alpha = 0.90f))
+                    .clickable(onClick = onToggleFullscreen),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (isFullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                    contentDescription = if (isFullscreen) "전체화면 종료" else "전체화면",
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(CircleShape)
+                .background(MindmapTokens.CanvasBorder.copy(alpha = 0.90f))
+                .clickable(onClick = onResetZoom),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Refresh,
+                contentDescription = "화면 비율 리셋",
+                tint = Color.White,
+                modifier = Modifier.size(16.dp)
+            )
+        }
     }
 }
 

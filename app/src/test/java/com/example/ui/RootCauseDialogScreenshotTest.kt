@@ -2,7 +2,9 @@ package com.example.ui
 
 import android.content.Context
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import com.example.backend.DtcRgatEngine
 import com.example.ui.components.RootCauseAnalysisDialog
@@ -104,6 +106,28 @@ class RootCauseDialogScreenshotTest {
 
         composeTestRule.onRoot().captureRoboImage(
             filePath = "src/test/screenshots/user_scenario_4dtcs_mindmap.png"
+        )
+    }
+
+    @Test
+    fun `captureFullscreen_Mindmap`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val engine = DtcRgatEngine.getInstance(context)
+        val userResult = engine.analyze(listOf("B16C500", "B16C600", "B186D16", "B187C88"))
+
+        composeTestRule.setContent {
+            MyApplicationTheme {
+                RootCauseAnalysisDialog(
+                    result = userResult,
+                    onDismiss = {},
+                    initialTab = 0,
+                    initialFullscreenMindmap = true
+                )
+            }
+        }
+
+        composeTestRule.onRoot().captureRoboImage(
+            filePath = "src/test/screenshots/mindmap_fullscreen_view.png"
         )
     }
 }
