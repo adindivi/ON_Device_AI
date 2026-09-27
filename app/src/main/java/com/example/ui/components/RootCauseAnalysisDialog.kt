@@ -41,6 +41,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -57,8 +58,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -732,7 +736,7 @@ private fun ConnectorRankItem(item: DtcRgatEngine.RgatConnectorRank) {
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(20.dp)
+                            .size(22.dp)
                             .clip(CircleShape)
                             .background(if (item.rank == 1) RgatDialogTokens.BrandBlue else RgatDialogTokens.SurfaceNeutral),
                         contentAlignment = Alignment.Center
@@ -740,8 +744,20 @@ private fun ConnectorRankItem(item: DtcRgatEngine.RgatConnectorRank) {
                         Text(
                             text = "${item.rank}",
                             color = if (item.rank == 1) Color.White else RgatDialogTokens.TextSecondary,
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 11.sp,
+                            style = LocalTextStyle.current.copy(
+                                textAlign = TextAlign.Center,
+                                lineHeight = 11.sp,
+                                platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(includeFontPadding = false),
+                                lineHeightStyle = LineHeightStyle(
+                                    alignment = LineHeightStyle.Alignment.Center,
+                                    trim = LineHeightStyle.Trim.Both
+                                )
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
                             maxLines = 1,
                             softWrap = false
                         )
