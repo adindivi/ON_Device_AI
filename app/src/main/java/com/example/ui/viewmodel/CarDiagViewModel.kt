@@ -106,6 +106,9 @@ class CarDiagViewModel(application: Application) : AndroidViewModel(application)
 
         // Start watching the phone "DB/rag_documents" directory
         backendEngine.startWatcher(viewModelScope)
+        backendEngine.onStatusChanged = {
+            refreshBackendStatus()
+        }
         refreshBackendStatus()
     }
 

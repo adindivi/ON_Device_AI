@@ -6,43 +6,74 @@ import java.io.File
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-class SimpleVectorDB(private val dbFile: File) {
+class SimpleVectorDB(private val dbFile: File, autoLoadAsync: Boolean = true) {
 
     private val dataList = mutableListOf<VectorDbEntry>()
     private val lock = ReentrantReadWriteLock()
 
+    @Volatile
+    var isLoaded: Boolean = false
+        private set
+
     init {
-        loadDb()
+        if (!dbFile.exists() || dbFile.length() == 0L) {
+            isLoaded = true
+        } else if (autoLoadAsync) {
+            loadDbAsync()
+        } else {
+            loadDb()
+        }
     }
 
     fun loadFromAssets(context: android.content.Context, assetPath: String = "DB/rag_vector_database.json") {
-        lock.write {
-            dataList.clear()
-            try {
-                val content = context.assets.open(assetPath).bufferedReader(Charsets.UTF_8).use { it.readText() }
-                parseAndPopulateEntries(content)
-            } catch (e: Exception) {
-                e.printStackTrace()
+        CoroutineScope(Dispatchers.IO).launch {
+            lock.write {
+                dataList.clear()
+                try {
+                    val content = context.assets.open(assetPath).bufferedReader(Charsets.UTF_8).use { it.readText() }
+                    parseAndPopulateEntries(content)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+                isLoaded = true
+                android.util.Log.i("SimpleVectorDB", "✅ [VectorDB 에셋 로딩 완료] 총 문서수: ${dataList.size}")
             }
         }
     }
 
     fun reloadFromDisk() {
-        loadDb()
+        loadDbAsync()
+    }
+
+    fun loadDbAsync(onComplete: (() -> Unit)? = null) {
+        CoroutineScope(Dispatchers.IO).launch {
+            loadDb()
+            withContext(Dispatchers.Main) {
+                onComplete?.invoke()
+            }
+        }
     }
 
     private fun loadDb() {
+        if (!dbFile.exists() || dbFile.length() == 0L) {
+            isLoaded = true
+            return
+        }
         lock.write {
             dataList.clear()
-            if (dbFile.exists() && dbFile.length() > 0) {
-                try {
-                    val content = dbFile.readText(Charsets.UTF_8)
-                    parseAndPopulateEntries(content)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+            try {
+                val content = dbFile.readText(Charsets.UTF_8)
+                parseAndPopulateEntries(content)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
+            isLoaded = true
+            android.util.Log.i("SimpleVectorDB", "✅ [VectorDB 로딩 완료] 총 문서수: ${dataList.size}")
         }
     }
 
@@ -177,5 +208,10 @@ class SimpleVectorDB(private val dbFile: File) {
     }
 
     fun getDbFilePath(): String = dbFile.absolutePath
-    fun getDocumentCount(): Int = lock.read { dataList.size }
+    fun getDocumentCount(): Int {
+        if (!isLoaded && lock.isWriteLocked) {
+            return 0
+        }
+        return lock.read { dataList.size }
+    }
 }

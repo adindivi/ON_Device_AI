@@ -9,6 +9,7 @@ import com.example.ui.viewmodel.ExtractedMetadata
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import java.io.File
@@ -103,27 +104,18 @@ class OnDeviceBackendEngine(private val context: Context) {
         }
         vectorDbFile = File(dbDirectory, "rag_vector_database.json")
 
-        // Auto unpack DB from assets if missing or default small file
-        unpackAssetsDbIfMissing()
-
         // 1. Initialize Mapping Dictionary
         MappingDictionary.loadMappingDictionary(dbDirectory)
 
-        // 2. Initialize Vector DB with direct fallback to APK Assets if external load is empty
-        vectorDb = SimpleVectorDB(vectorDbFile)
-        if (vectorDb.getDocumentCount() == 0) {
-            vectorDb.loadFromAssets(context, "DB/rag_vector_database.json")
-        }
+        // 2. Initialize Vector DB with non-blocking async loader (UI thread safe)
+        vectorDb = SimpleVectorDB(vectorDbFile, autoLoadAsync = true)
 
-        // 3. Initialize ONNX BERT Embedding Engine (use app-internal storage to avoid Scoped Storage permission issues)
+        // 3. Initialize ONNX BERT Embedding Engine (filesDir location)
         val onnxDir = File(context.filesDir, "onnx_models")
         if (!onnxDir.exists()) onnxDir.mkdirs()
         val onnxBertModelFile = File(onnxDir, "ko-sbert-multitask_embedding.onnx")
         val onnxVocabFile = File(onnxDir, "ko-sbert-multitask_vocab.txt")
-        copyOnnxFromAssetsIfNeeded(onnxBertModelFile, "DB/ko-sbert-multitask_embedding.onnx")
-        copyOnnxFromAssetsIfNeeded(onnxVocabFile, "DB/ko-sbert-multitask_vocab.txt")
         onnxBertEngine = OnnxBertEmbeddingEngine(onnxBertModelFile, onnxVocabFile)
-        Log.d("BackendEngine", "ONNX engine isReady=${onnxBertEngine.isReady}")
 
         // 4. Initialize RAG Searcher with ONNX BERT Engine
         ragSearcher = RAGSearcher(vectorDb, onnxBertEngine)
@@ -145,8 +137,32 @@ class OnDeviceBackendEngine(private val context: Context) {
             }
         }
 
-        clearOldDatabaseAndSyncFresh()
+        // Asynchronous background warm-up: unpack assets if needed, load ONNX model, sync Room DB
+        CoroutineScope(Dispatchers.IO).launch {
+            unpackAssetsDbIfMissing()
+            copyOnnxFromAssetsIfNeeded(onnxBertModelFile, "DB/ko-sbert-multitask_embedding.onnx")
+            copyOnnxFromAssetsIfNeeded(onnxVocabFile, "DB/ko-sbert-multitask_vocab.txt")
+            if (!onnxBertEngine.isReady) {
+                onnxBertEngine.initEngine()
+            }
+
+            if (!vectorDb.isLoaded || vectorDb.getDocumentCount() == 0) {
+                if (vectorDbFile.exists() && vectorDbFile.length() > 0) {
+                    vectorDb.reloadFromDisk()
+                } else {
+                    vectorDb.loadFromAssets(context, "DB/rag_vector_database.json")
+                }
+            }
+
+            clearOldDatabaseAndSyncFresh()
+
+            withContext(Dispatchers.Main) {
+                onStatusChanged?.invoke()
+            }
+        }
     }
+
+    var onStatusChanged: (() -> Unit)? = null
 
     fun loadQwenModelFromUri(uri: android.net.Uri, onComplete: (Boolean) -> Unit = {}) {
         val prefs = context.getSharedPreferences("qwen_prefs", Context.MODE_PRIVATE)
@@ -154,13 +170,16 @@ class OnDeviceBackendEngine(private val context: Context) {
         qwenLlm.loadFromUri(context, uri, onComplete)
     }
 
-    private fun copyAssetFile(assetPath: String, targetFile: File, overwrite: Boolean = true) {
+    private fun copyAssetFile(assetPath: String, targetFile: File, overwrite: Boolean = false) {
         try {
-            context.assets.open(assetPath).use { input ->
-                if (overwrite || !targetFile.exists() || targetFile.length() == 0L) {
-                    targetFile.outputStream().use { output -> input.copyTo(output) }
-                }
+            if (!overwrite && targetFile.exists() && targetFile.length() > 1000L) {
+                Log.d("BackendEngine", "Asset skip (already exists): ${targetFile.name} (${targetFile.length() / 1024 / 1024}MB)")
+                return
             }
+            context.assets.open(assetPath).use { input ->
+                targetFile.outputStream().use { output -> input.copyTo(output, bufferSize = 65536) }
+            }
+            Log.i("BackendEngine", "✅ Asset copied: ${targetFile.name}, size=${targetFile.length() / 1024 / 1024}MB")
         } catch (e: Exception) {
             // Asset file might be optional or omitted
         }
@@ -169,10 +188,9 @@ class OnDeviceBackendEngine(private val context: Context) {
     private fun unpackAssetsDbIfMissing() {
         val mappingFile = File(dbDirectory, MappingDictionary.MAPPING_FILENAME)
         try {
-            // Force unpack/overwrite mapping & vector DB assets
-            copyAssetFile("DB/mapping_dictionary.json", mappingFile, overwrite = true)
-            copyAssetFile("DB/rag_vector_database.json", vectorDbFile, overwrite = true)
-            // Note: ONNX files are now copied to filesDir/onnx_models/ via copyOnnxFromAssetsIfNeeded()
+            // Unpack assets only if missing or empty (Skip duplicate copy per GEMINI.md Rule 1)
+            copyAssetFile("DB/mapping_dictionary.json", mappingFile, overwrite = false)
+            copyAssetFile("DB/rag_vector_database.json", vectorDbFile, overwrite = false)
         } catch (e: Exception) {
             Log.w("BackendEngine", "unpackAssetsDb partial failure: ${e.message}")
         }
