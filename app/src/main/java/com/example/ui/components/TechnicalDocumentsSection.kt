@@ -66,19 +66,19 @@ Column {
                     )
                 }
 
-                // "+ 노하우 추가" button (Toss ice blue)
+                // "+ 해결방안 추가" button (Neutral capsule)
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFFEFF6FF))
-                        .border(1.dp, Color(0xFFBFDBFE), RoundedCornerShape(8.dp))
+                        .background(Color(0xFFF1F5F9))
+                        .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(8.dp))
                         .clickable { onOpenAddRemedy() }
                         .padding(horizontal = 10.dp, vertical = 5.dp)
                 ) {
                     Text(
                         text = "+ 해결방안 추가",
                         style = MaterialTheme.typography.labelSmall.copy(
-                            color = Color(0xFF004AC6),
+                            color = Color(0xFF0F172A),
                             fontWeight = FontWeight.Bold,
                             fontSize = 11.sp
                         )
@@ -206,7 +206,8 @@ Column {
                             // Upvote / Recommend Button
                             Surface(
                                 shape = RoundedCornerShape(20.dp),
-                                color = Color(0xFFF1F5F9),
+                                color = Color(0xFFF8FAFC),
+                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
                                 modifier = Modifier
                                     .clickable {
                                         localUpvoteCount++
@@ -221,7 +222,7 @@ Column {
                                     Icon(
                                         imageVector = Icons.Default.ThumbUp,
                                         contentDescription = "Upvote",
-                                        tint = Color(0xFF2563EB),
+                                        tint = Color(0xFF1E293B),
                                         modifier = Modifier.size(12.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
@@ -229,7 +230,7 @@ Column {
                                         text = "도움됨",
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF2563EB)
+                                        color = Color(0xFF1E293B)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
@@ -253,8 +254,8 @@ Column {
                     .clip(RoundedCornerShape(10.dp))
                     .clickable { onToggleTechDocs() }
                     .testTag("btn_expand_tech_docs"),
-                color = Color(0xFFF1F5F9),
-                border = BorderStroke(1.dp, Color(0xFFCBD5E1))
+                color = Color(0xFFF8FAFC),
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
             ) {
                 Row(
                     modifier = Modifier
@@ -266,7 +267,7 @@ Column {
                     Icon(
                         imageVector = if (isTechDocsExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                         contentDescription = "Expand",
-                        tint = Color(0xFF2563EB),
+                        tint = Color(0xFF0F172A),
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
@@ -274,7 +275,7 @@ Column {
                         text = if (isTechDocsExpanded) "간략히 보기" else "관련 정비 지침 더보기",
                         style = MaterialTheme.typography.labelMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF2563EB),
+                            color = Color(0xFF0F172A),
                             fontSize = 12.sp
                         )
                     )

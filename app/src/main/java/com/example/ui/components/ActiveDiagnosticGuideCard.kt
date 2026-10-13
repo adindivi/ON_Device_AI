@@ -41,8 +41,8 @@ Card(
                     .fillMaxWidth()
                     .testTag("card_result_display"),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF3F6FD)),
-                border = androidx.compose.foundation.BorderStroke(0.5.dp, Color(0xFFD0D7F0))
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
             ) {
                 Column(
                     modifier = Modifier
@@ -62,7 +62,7 @@ Card(
                                 modifier = Modifier
                                     .size(34.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(Color(0xFF004AC6)),
+                                    .background(Color(0xFF0F172A)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
@@ -78,13 +78,13 @@ Card(
                                     text = "스마트 정비 진단서",
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF004AC6)
+                                        color = Color(0xFF0F172A)
                                     )
                                 )
                                 Text(
                                     text = "RAG 768차원 벡터 신경망 AI 솔루션",
                                     style = MaterialTheme.typography.bodySmall.copy(
-                                        color = Color(0xFF434655),
+                                        color = Color(0xFF64748B),
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.SemiBold
                                     )
@@ -99,7 +99,7 @@ Card(
                             Icon(
                                 imageVector = if (isGuideExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                                 contentDescription = "Toggle",
-                                tint = Color(0xFF004AC6)
+                                tint = Color(0xFF64748B)
                             )
                         }
                     }
@@ -139,8 +139,8 @@ Card(
                                      modifier = Modifier
                                          .fillMaxWidth()
                                          .clip(RoundedCornerShape(10.dp))
-                                         .background(Color.White)
-                                         .border(1.dp, Color(0xFFD3D5E7), RoundedCornerShape(10.dp))
+                                         .background(Color(0xFFF8FAFC))
+                                         .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(10.dp))
                                          .padding(12.dp)
                                  ) {
                                      Text(
@@ -160,8 +160,8 @@ Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(10.dp))
-                                    .background(Color.White)
-                                    .border(1.dp, Color(0xFFD3D5E7), RoundedCornerShape(10.dp))
+                                    .background(Color(0xFFF8FAFC))
+                                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(10.dp))
                                     .padding(12.dp)
                             ) {
                                 Column {
@@ -169,7 +169,7 @@ Card(
                                         Icon(
                                             imageVector = Icons.Default.Build,
                                             contentDescription = "Causes",
-                                            tint = Color(0xFF004AC6),
+                                            tint = Color(0xFF0F172A),
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))
@@ -177,7 +177,7 @@ Card(
                                             text = "추정 원인",
                                             style = MaterialTheme.typography.labelMedium.copy(
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color(0xFF004AC6)
+                                                color = Color(0xFF0F172A)
                                             )
                                         )
                                     }
@@ -250,7 +250,7 @@ Card(
                                                 ) {
                                                     Text(
                                                         text = "• ",
-                                                        color = Color(0xFF004AC6),
+                                                        color = Color(0xFF64748B),
                                                         fontWeight = FontWeight.Bold,
                                                         fontSize = (12 * textSizeScale).sp
                                                     )
@@ -284,7 +284,7 @@ Card(
                                         Icon(
                                             imageVector = Icons.Default.Lightbulb,
                                             contentDescription = "Advice",
-                                            tint = Color(0xFF1D4ED8),
+                                            tint = Color(0xFF0F172A),
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))
@@ -292,12 +292,12 @@ Card(
                                             text = "조치 방안",
                                             style = MaterialTheme.typography.labelMedium.copy(
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color(0xFF1D4ED8)
+                                                color = Color(0xFF0F172A)
                                             )
                                         )
                                     }
                                     Spacer(modifier = Modifier.height(6.dp))
-                                    var fallbackToText by remember { mutableStateOf(false) }
+                                    var fallbackToText by remember(result.id, result.solutionText) { mutableStateOf(false) }
                                     if (result.solutionText.startsWith("[JSON_GRAPH_START]") && !fallbackToText) {
                                         com.example.ui.components.RootCauseGraphView(
                                             jsonGraphString = result.solutionText,
@@ -309,7 +309,7 @@ Card(
                                             fullText = displayStr,
                                             style = TextStyle(
                                                 fontSize = (12 * textSizeScale).sp,
-                                                color = Color(0xFF1E3A8A),
+                                                color = Color(0xFF1E293B),
                                                 lineHeight = 18.sp,
                                                 fontWeight = FontWeight.Medium
                                             )

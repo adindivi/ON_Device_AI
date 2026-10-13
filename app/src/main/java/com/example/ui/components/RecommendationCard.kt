@@ -77,15 +77,17 @@ fun RecommendationCard(
         else -> "우선 점검 3위"
     }
     val rankColor = when (rankIndex) {
-        0 -> Color(0xFFB45309)
+        0 -> Color(0xFF0F172A)
         1 -> Color(0xFF475569)
-        else -> Color(0xFF9A3412)
+        else -> Color(0xFF64748B)
     }
-    val rankBg = Color.White
+    val rankBg = when (rankIndex) {
+        0 -> Color(0xFFF1F5F9)
+        else -> Color(0xFFF8FAFC)
+    }
     val rankBorder = when (rankIndex) {
-        0 -> Color(0xFFFDE68A)
-        1 -> Color(0xFFCBD5E1)
-        else -> Color(0xFFFDBA74)
+        0 -> Color(0xFFCBD5E1)
+        else -> Color(0xFFE2E8F0)
     }
 
     val compName = match.metadata.component.ifBlank { "관련 부품" }
@@ -233,7 +235,7 @@ fun RecommendationCard(
                         text = "점검 조치 가이드",
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF004AC6),
+                            color = Color(0xFF0F172A),
                             fontSize = 10.sp
                         )
                     )
@@ -254,14 +256,14 @@ fun RecommendationCard(
                 Spacer(modifier = Modifier.height(6.dp))
                 Surface(
                     shape = RoundedCornerShape(50.dp),
-                    color = Color(0xFFF0F9FF),
-                    border = BorderStroke(1.dp, Color(0xFFBAE6FD))
+                    color = Color(0xFFF1F5F9),
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
                 ) {
                     Text(
                         text = "커넥터: $connLoc",
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.5.dp),
                         style = MaterialTheme.typography.labelSmall.copy(
-                            color = Color(0xFF0284C7),
+                            color = Color(0xFF475569),
                             fontWeight = FontWeight.Bold,
                             fontSize = 10.5.sp
                         )
@@ -302,8 +304,8 @@ fun RecommendationCard(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(50.dp))
-                        .border(1.dp, TossGray200, RoundedCornerShape(50.dp))
-                        .background(TossBadgeActionBg)
+                        .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(50.dp))
+                        .background(Color(0xFFF8FAFC))
                         .clickable { helpfulCount++ }
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
@@ -314,14 +316,14 @@ fun RecommendationCard(
                         Icon(
                             imageVector = Icons.Default.ThumbUp,
                             contentDescription = "도움됨",
-                            tint = TossBadgeActionFg,
+                            tint = Color(0xFF1E293B),
                             modifier = Modifier.size(13.dp)
                         )
                         Text(
                             text = "도움됨 $helpfulCount",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TossBadgeActionFg
+                            color = Color(0xFF1E293B)
                         )
                     }
                 }
@@ -370,23 +372,16 @@ data class TextStyleWrapper(
  */
 @Composable
 fun ConfidenceChip(confidencePercent: Float) {
-    val (textColor, borderColor) = when {
-        confidencePercent >= 90f -> Color(0xFF059669) to Color(0xFFA7F3D0) // Emerald
-        confidencePercent >= 70f -> Color(0xFF0284C7) to Color(0xFFBAE6FD) // Blue
-        confidencePercent >= 50f -> Color(0xFFD97706) to Color(0xFFFDE68A) // Amber
-        else -> Color(0xFFDC2626) to Color(0xFFFECACA) // Red
-    }
-
     Surface(
         shape = RoundedCornerShape(50.dp),
-        color = Color.White,
-        border = BorderStroke(1.dp, borderColor)
+        color = Color(0xFFF1F5F9),
+        border = BorderStroke(1.dp, Color(0xFFCBD5E1))
     ) {
         Text(
             text = "일치도 ${String.format(java.util.Locale.US, "%.1f", confidencePercent)}%",
             modifier = Modifier.padding(horizontal = 9.dp, vertical = 3.dp),
             style = MaterialTheme.typography.labelSmall.copy(
-                color = textColor,
+                color = Color(0xFF0F172A),
                 fontWeight = FontWeight.Bold,
                 fontSize = 10.5.sp
             )
