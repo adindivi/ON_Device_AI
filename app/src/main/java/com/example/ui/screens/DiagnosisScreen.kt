@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -96,6 +97,7 @@ fun DiagnosisScreen(
     onRecommendDocument: (Long, String) -> Unit,
     onOpenAddRemedy: () -> Unit,
     onOpenRgatAnalysis: ((List<String>) -> Unit)? = null,
+    isExpandedScreen: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -104,6 +106,9 @@ fun DiagnosisScreen(
     var isListeningVoice by remember { mutableStateOf(false) }
     var isTechDocsExpanded by remember { mutableStateOf(false) }
     var selectedDocForDetail by remember { mutableStateOf<RagDocument?>(null) }
+
+    val leftScrollState = rememberScrollState()
+    val rightScrollState = rememberScrollState()
 
     val speechLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -142,14 +147,9 @@ fun DiagnosisScreen(
             audioPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
         }
     }
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+
+    @Composable
+    fun InputAndStepperBlock() {
         // Diagnosis Data Input Card Component
         DiagnosisInputSection(
             dtcInput = dtcInput,
@@ -192,7 +192,10 @@ fun DiagnosisScreen(
             diagnosisStep = diagnosisStep,
             hasActiveResult = activeResult != null
         )
+    }
 
+    @Composable
+    fun ResultsAndDocsBlock() {
         // Active AI Diagnostic Guide Card
         activeResult?.let { result ->
             com.example.ui.components.ActiveDiagnosticGuideCard(
@@ -216,6 +219,50 @@ fun DiagnosisScreen(
             onDocumentSelect = { doc -> selectedDocForDetail = doc },
             onRecommendDocument = onRecommendDocument
         )
+    }
+
+    if (isExpandedScreen) {
+        // DeX / 가로 대화면 모드: 좌우 2분할 (Left 42% 입력부 : Right 58% 결과 및 문서)
+        Row(
+            modifier = modifier
+                .fillMaxSize()
+                .background(Color.White)
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(0.42f)
+                    .fillMaxHeight()
+                    .verticalScroll(leftScrollState),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                InputAndStepperBlock()
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(0.58f)
+                    .fillMaxHeight()
+                    .verticalScroll(rightScrollState),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                ResultsAndDocsBlock()
+            }
+        }
+    } else {
+        // 스마트폰 세로 모드: 기존 단일 1열 스크롤
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .background(Color.White)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            InputAndStepperBlock()
+            ResultsAndDocsBlock()
+        }
     }
 
     selectedDocForDetail?.let { doc ->

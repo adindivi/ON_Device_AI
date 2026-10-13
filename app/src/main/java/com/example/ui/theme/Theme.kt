@@ -1,13 +1,10 @@
 package com.example.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 
-// ── Toss-Inspired Minimal B&W Light Scheme ────────────────────────────────────
+// ── Toss-Inspired Minimal B&W Light Scheme (전역 단일 고정 라이트 테마) ───────
 private val LightColorScheme = lightColorScheme(
     primary            = TossBlack,
     onPrimary          = TossWhite,
@@ -32,28 +29,17 @@ private val LightColorScheme = lightColorScheme(
     onErrorContainer   = CarOnErrorContainer
 )
 
-// ── Dark Scheme (minimal change) ──────────────────────────────────────────────
-private val DarkColorScheme = darkColorScheme(
-    primary            = Color(0xFFB4C5FF),
-    onPrimary          = Color(0xFF002A78),
-    primaryContainer   = CarPrimary,
-    onPrimaryContainer = Color.White,
-    secondary          = Color(0xFFB9C7E0),
-    background         = Color(0xFF121316),
-    onBackground       = Color(0xFFE2E2E6),
-    surface            = Color(0xFF1A1C1E),
-    onSurface          = Color(0xFFE2E2E6)
-)
-
+/**
+ * [MyApplicationTheme]
+ * 토스 인스파이어드 미니멀 B&W 단일 라이트 테마
+ * - 다크 모드 분기를 완전히 제거하고 시스템 설정과 무관하게 항상 일관된 고시인성 화이트/블랙 핀테크 테마를 제공합니다.
+ */
 @Composable
 fun MyApplicationTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
-
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = LightColorScheme,
         typography = Typography,
         content = content
     )
