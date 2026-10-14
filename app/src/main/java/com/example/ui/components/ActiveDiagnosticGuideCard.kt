@@ -62,13 +62,14 @@ Card(
                                 modifier = Modifier
                                     .size(34.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(Color(0xFF004AC6)),
+                                    .background(Color(0xFFEFF6FF))
+                                    .border(1.dp, Color(0xFFDBEAFE), RoundedCornerShape(8.dp)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Psychology,
                                     contentDescription = "AI Guide",
-                                    tint = Color.White,
+                                    tint = Color(0xFF2563EB),
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -78,13 +79,13 @@ Card(
                                     text = "스마트 정비 진단서",
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF004AC6)
+                                        color = Color(0xFF1E293B)
                                     )
                                 )
                                 Text(
                                     text = "RAG 768차원 벡터 신경망 AI 솔루션",
                                     style = MaterialTheme.typography.bodySmall.copy(
-                                        color = Color(0xFF434655),
+                                        color = Color(0xFF64748B),
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.SemiBold
                                     )
@@ -99,7 +100,7 @@ Card(
                             Icon(
                                 imageVector = if (isGuideExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                                 contentDescription = "Toggle",
-                                tint = Color(0xFF004AC6)
+                                tint = Color(0xFF64748B)
                             )
                         }
                     }
@@ -169,7 +170,7 @@ Card(
                                         Icon(
                                             imageVector = Icons.Default.Build,
                                             contentDescription = "Causes",
-                                            tint = Color(0xFF004AC6),
+                                            tint = Color(0xFF2563EB),
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))
@@ -177,7 +178,7 @@ Card(
                                             text = "추정 원인",
                                             style = MaterialTheme.typography.labelMedium.copy(
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color(0xFF004AC6)
+                                                color = Color(0xFF1E293B)
                                             )
                                         )
                                     }
@@ -250,7 +251,7 @@ Card(
                                                 ) {
                                                     Text(
                                                         text = "• ",
-                                                        color = Color(0xFF004AC6),
+                                                        color = Color(0xFF2563EB),
                                                         fontWeight = FontWeight.Bold,
                                                         fontSize = (12 * textSizeScale).sp
                                                     )
@@ -284,7 +285,7 @@ Card(
                                         Icon(
                                             imageVector = Icons.Default.Lightbulb,
                                             contentDescription = "Advice",
-                                            tint = Color(0xFF1D4ED8),
+                                            tint = Color(0xFF2563EB),
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))
@@ -292,7 +293,7 @@ Card(
                                             text = "조치 방안",
                                             style = MaterialTheme.typography.labelMedium.copy(
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color(0xFF1D4ED8)
+                                                color = Color(0xFF1E293B)
                                             )
                                         )
                                     }
@@ -309,7 +310,7 @@ Card(
                                             fullText = displayStr,
                                             style = TextStyle(
                                                 fontSize = (12 * textSizeScale).sp,
-                                                color = Color(0xFF1E3A8A),
+                                                color = Color(0xFF1E293B),
                                                 lineHeight = 18.sp,
                                                 fontWeight = FontWeight.Medium
                                             )

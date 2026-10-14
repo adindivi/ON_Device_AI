@@ -162,7 +162,7 @@ class DiagnosisScreenSymptomSearchScreenshotTest {
         }
 
         composeTestRule.onRoot().captureRoboImage(
-            filePath = "src/test/screenshots/symptom_search_diagnosis_phone.png"
+            filePath = "src/test/screenshots/soft_indigo_preview_phone.png"
         )
     }
 
@@ -206,7 +206,7 @@ class DiagnosisScreenSymptomSearchScreenshotTest {
         }
 
         composeTestRule.onRoot().captureRoboImage(
-            filePath = "src/test/screenshots/symptom_search_diagnosis_dex.png"
+            filePath = "src/test/screenshots/soft_indigo_preview_dex.png"
         )
     }
 
@@ -266,7 +266,7 @@ class DiagnosisScreenSymptomSearchScreenshotTest {
         }
 
         composeTestRule.onRoot().captureRoboImage(
-            filePath = "src/test/screenshots/symptom_search_pure_symptom.png"
+            filePath = "src/test/screenshots/soft_indigo_preview_galaxy.png"
         )
     }
 }

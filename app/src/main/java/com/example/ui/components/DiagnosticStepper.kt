@@ -1,6 +1,7 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -75,10 +76,19 @@ fun DiagnosticStepper(
                                     .clip(CircleShape)
                                     .background(
                                         when {
-                                            isCompleted -> Color(0xFF004AC6)
+                                            isCompleted -> Color(0xFFEFF6FF)
                                             isCurrent -> Color(0xFFDBEAFE)
                                             else -> Color(0xFFF1F5F9)
                                         }
+                                    )
+                                    .border(
+                                        1.dp,
+                                        when {
+                                            isCompleted -> Color(0xFFBFDBFE)
+                                            isCurrent -> Color(0xFF93C5FD)
+                                            else -> Color(0xFFE2E8F0)
+                                        },
+                                        CircleShape
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -86,13 +96,13 @@ fun DiagnosticStepper(
                                     Icon(
                                         imageVector = Icons.Default.Check,
                                         contentDescription = "Done",
-                                        tint = Color.White,
+                                        tint = Color(0xFF2563EB),
                                         modifier = Modifier.size(16.dp)
                                     )
                                 } else {
                                     Text(
                                         text = "$stepNum",
-                                        color = if (isCurrent) Color(0xFF004AC6) else Color(0xFF94A3B8),
+                                        color = if (isCurrent) Color(0xFF2563EB) else Color(0xFF94A3B8),
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -103,7 +113,7 @@ fun DiagnosticStepper(
                                 text = title,
                                 fontSize = 10.sp,
                                 fontWeight = if (isCurrent || isCompleted) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isCompleted) Color(0xFF047857) else if (isCurrent) CarPrimaryContainer else CarTextSubtle
+                                color = if (isCompleted) Color(0xFF1E293B) else if (isCurrent) Color(0xFF2563EB) else CarTextSubtle
                             )
                         }
                     }

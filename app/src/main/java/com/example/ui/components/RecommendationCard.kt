@@ -233,7 +233,7 @@ fun RecommendationCard(
                         text = "점검 조치 가이드",
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF004AC6),
+                            color = Color(0xFF2563EB),
                             fontSize = 10.sp
                         )
                     )

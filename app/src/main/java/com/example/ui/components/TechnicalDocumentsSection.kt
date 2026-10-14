@@ -78,7 +78,7 @@ Column {
                     Text(
                         text = "+ 해결방안 추가",
                         style = MaterialTheme.typography.labelSmall.copy(
-                            color = Color(0xFF004AC6),
+                            color = Color(0xFF2563EB),
                             fontWeight = FontWeight.Bold,
                             fontSize = 11.sp
                         )
